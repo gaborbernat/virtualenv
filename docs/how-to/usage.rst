@@ -64,6 +64,29 @@ than a rule. The interpreter at this path is checked first, but only used if it 
 
 In this example, /usr/bin/python3.9 is checked first but rejected because it does not satisfy the >=3.10 constraint.
 
+Using version managers (pyenv, mise, asdf)
+==========================================
+
+virtualenv automatically resolves shims from `pyenv <https://github.com/pyenv/pyenv>`_,
+`mise <https://mise.jdx.dev/>`_, and `asdf <https://asdf-vm.com/>`_ to the real Python binary. Set the active Python
+version using any of the standard mechanisms and virtualenv will discover it:
+
+.. code-block:: console
+
+    $ pyenv local 3.12.0
+    $ virtualenv venv  # uses pyenv's 3.12.0, not the system Python
+
+    $ PYENV_VERSION=3.11.0 virtualenv venv  # uses 3.11.0
+
+This also works with mise and asdf:
+
+.. code-block:: console
+
+    $ mise use python@3.12
+    $ virtualenv venv
+
+No additional configuration is required. See :doc:`../explanation` for details on how shim resolution works.
+
 ********************************
  Activate a virtual environment
 ********************************

@@ -60,6 +60,8 @@ These Python distributions work on Linux, macOS, and Windows:
 - Installations from `python.org <https://www.python.org/downloads/>`_
 - `python-build-standalone <https://github.com/astral-sh/python-build-standalone>`_ builds (used by `uv
   <https://docs.astral.sh/uv/>`_ and `mise <https://mise.jdx.dev/>`_)
+- Python versions managed by `pyenv <https://github.com/pyenv/pyenv>`_, `mise <https://mise.jdx.dev/>`_, or `asdf
+  <https://asdf-vm.com/>`_ (shims are automatically resolved to the real binary)
 
 Linux
 =====
