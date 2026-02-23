@@ -105,7 +105,7 @@ jobs:
             nu_version=$(gh release view --repo nushell/nushell --json tagName -q .tagName)
             gh release download "$nu_version" --repo nushell/nushell --pattern "*-x86_64-pc-windows-msvc.zip" --dir "$RUNNER_TEMP"
             7z x "$RUNNER_TEMP/nu-${nu_version#v}-x86_64-pc-windows-msvc.zip" -o"$RUNNER_TEMP/nushell" -y
-            cp "$RUNNER_TEMP/nushell/nu-${nu_version#v}-x86_64-pc-windows-msvc/nu.exe" "/c/ProgramData/chocolatey/bin/nu.exe"
+            cp "$RUNNER_TEMP/nushell/nu.exe" "/c/ProgramData/chocolatey/bin/nu.exe"
           fi
       - name: 🧬 Pick environment to run
         shell: bash
