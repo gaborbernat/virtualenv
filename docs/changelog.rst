@@ -7,6 +7,21 @@
 .. towncrier release notes start
 
 ***********************
+ v20.39.0 (2026-02-23)
+***********************
+
+Features - 20.39.0
+==================
+
+- Automatically resolve version manager shims (pyenv, mise, asdf) to the real Python binary during discovery, preventing
+  incorrect interpreter selection when shims are on ``PATH`` - by :user:`gaborbernat`. (:issue:`3049`)
+- Add architecture (ISA) awareness to Python discovery — users can now specify a CPU architecture suffix in the
+  ``--python`` spec string (e.g. ``cpython3.12-64-arm64``) to distinguish between interpreters that share the same
+  version and bitness but target different architectures. Uses ``sysconfig.get_platform()`` as the data source, with
+  cross-platform normalization (``amd64`` ↔ ``x86_64``, ``aarch64`` ↔ ``arm64``). Omitting the suffix preserves existing
+  behavior - by :user:`rahuldevikar`. (:issue:`3059`)
+
+***********************
  v20.38.0 (2026-02-19)
 ***********************
 
