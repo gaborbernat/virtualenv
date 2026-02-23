@@ -1,4 +1,4 @@
-requires = [ "tox>=4.34.1" ]
+requires = [ "tox>=4.45" ]
 env_list = [
   "3.14",
   "3.13",
@@ -15,6 +15,7 @@ env_list = [
   "fix",
   "graalpy",
   "readme",
+  "rp",
   "type",
 ]
 skip_missing_interpreters = true
@@ -117,6 +118,19 @@ commands = [
   [ "uv", "build", "--sdist", "--wheel", "--out-dir", "{env_tmp_dir}", "." ],
   [ "twine", "check", "{env_tmp_dir}{/}*" ],
   [ "check-wheel-contents", "--no-config", "{env_tmp_dir}" ],
+]
+
+[env.rp]
+commands = [
+  [
+    "pytest",
+    { replace = "posargs", extend = true, default = [
+      "--junitxml",
+      "{work_dir}{/}junit.{env_name}.xml",
+      "tests",
+      "--skip-slow",
+    ] },
+  ],
 ]
 
 [env.type]
