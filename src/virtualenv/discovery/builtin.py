@@ -261,10 +261,11 @@ def path_exe_finder(spec: PythonSpec) -> Callable[[Path], Generator[tuple[Path, 
 def _resolve_shim(exe_path: str, env: Mapping[str, str]) -> str | None:
     """Resolve a version-manager shim to the actual Python binary.
 
-    Version managers like pyenv, mise, and asdf place shim scripts in a directory on PATH that delegate to
-    the real Python binary. When run as subprocesses, these shims may resolve to the system Python instead of the
-    version-manager-managed version. This function bypasses the shim by reading the ``.python-version`` file
-    (a convention shared across version managers) and directly locating the binary under the versions directory.
+    Version managers like pyenv, mise, and asdf place shim scripts in a directory on PATH that delegate to the real
+    Python binary. When run as subprocesses, these shims may resolve to the system Python instead of the
+    version-manager-managed version. This function bypasses the shim by reading the ``.python-version`` file (a
+    convention shared across version managers) and directly locating the binary under the versions directory.
+
     """
     for shims_dir_env, versions_path in _VERSION_MANAGER_LAYOUTS:
         if root := env.get(shims_dir_env):
@@ -294,8 +295,9 @@ def _resolve_shim_to_binary(exe_name: str, versions_dir: str, env: Mapping[str, 
 def _active_versions(env: Mapping[str, str]) -> Generator[str, None, None]:
     """Yield active Python version strings by reading version-manager configuration.
 
-    Checks in priority order: ``PYENV_VERSION`` env var, ``.python-version`` file (searching parent directories
-    from cwd), then the global version file at ``$PYENV_ROOT/version``.
+    Checks in priority order: ``PYENV_VERSION`` env var, ``.python-version`` file (searching parent directories from
+    cwd), then the global version file at ``$PYENV_ROOT/version``.
+
     """
     if pyenv_version := env.get("PYENV_VERSION"):
         yield from pyenv_version.split(":")
