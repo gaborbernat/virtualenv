@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import stat
 import subprocess
 import sys
 from argparse import Namespace
@@ -382,3 +383,161 @@ def test_invalid_discovery_via_env_var_unit(monkeypatch):
     parser = VirtualEnvConfigParser()
     with pytest.raises(RuntimeError, match=r"nonexistent_plugin.*is not available"):
         get_discover(parser, [])
+
+
+def _create_version_manager(tmp_path: Path, env_var: str) -> Path:
+    root = tmp_path / env_var.lower()
+    root.mkdir()
+    (root / "shims").mkdir()
+    return root
+
+
+def _create_versioned_binary(root: Path, versions_path: tuple[str, ...], version: str, exe_name: str) -> Path:
+    bin_dir = root.joinpath(*versions_path, version, "bin")
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    exe = bin_dir / exe_name
+    exe.touch()
+    exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
+    return exe
+
+
+@pytest.mark.parametrize(
+    ("env_var", "versions_path"),
+    [
+        pytest.param("PYENV_ROOT", ("versions",), id="pyenv"),
+        pytest.param("MISE_DATA_DIR", ("installs", "python"), id="mise"),
+        pytest.param("ASDF_DATA_DIR", ("installs", "python"), id="asdf"),
+    ],
+)
+def test_shim_resolved_to_real_binary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env_var: str, versions_path: tuple[str, ...]
+) -> None:
+    root = _create_version_manager(tmp_path, env_var)
+    real_binary = _create_versioned_binary(root, versions_path, "3.8.12", "python3.8")
+    shim = root / "shims" / "python3.8"
+    shim.touch(mode=0o755)
+
+    monkeypatch.setenv("PATH", str(root / "shims"))
+    monkeypatch.setenv(env_var, str(root))
+    monkeypatch.setenv("PYENV_VERSION", "3.8.12")
+    monkeypatch.delenv("MISE_DATA_DIR", raising=False) if env_var != "MISE_DATA_DIR" else None
+    monkeypatch.delenv("ASDF_DATA_DIR", raising=False) if env_var != "ASDF_DATA_DIR" else None
+    monkeypatch.delenv("PYENV_ROOT", raising=False) if env_var != "PYENV_ROOT" else None
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.8", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(real_binary)
+
+
+def test_shim_not_resolved_without_version_manager_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    shims_dir = tmp_path / "shims"
+    shims_dir.mkdir()
+    shim = shims_dir / "python3.8"
+    shim.touch(mode=0o755)
+
+    monkeypatch.setenv("PATH", str(shims_dir))
+    monkeypatch.delenv("PYENV_ROOT", raising=False)
+    monkeypatch.delenv("MISE_DATA_DIR", raising=False)
+    monkeypatch.delenv("ASDF_DATA_DIR", raising=False)
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.8", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(shim)
+
+
+def test_shim_falls_through_when_binary_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _create_version_manager(tmp_path, "PYENV_ROOT")
+    shim = root / "shims" / "python3.8"
+    shim.touch(mode=0o755)
+
+    monkeypatch.setenv("PATH", str(root / "shims"))
+    monkeypatch.setenv("PYENV_ROOT", str(root))
+    monkeypatch.setenv("PYENV_VERSION", "3.8.12")
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.8", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(shim)
+
+
+def test_shim_uses_python_version_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _create_version_manager(tmp_path, "PYENV_ROOT")
+    real_binary = _create_versioned_binary(root, ("versions",), "3.9.7", "python3.9")
+    shim = root / "shims" / "python3.9"
+    shim.touch(mode=0o755)
+    (tmp_path / ".python-version").write_text(encoding="utf-8", data="3.9.7\n")
+
+    monkeypatch.setenv("PATH", str(root / "shims"))
+    monkeypatch.setenv("PYENV_ROOT", str(root))
+    monkeypatch.delenv("PYENV_VERSION", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.9", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(real_binary)
+
+
+def test_shim_pyenv_version_env_takes_priority_over_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _create_version_manager(tmp_path, "PYENV_ROOT")
+    _create_versioned_binary(root, ("versions",), "3.8.12", "python3.8")
+    env_binary = _create_versioned_binary(root, ("versions",), "3.8.6", "python3.8")
+    shim = root / "shims" / "python3.8"
+    shim.touch(mode=0o755)
+    (tmp_path / ".python-version").write_text(encoding="utf-8", data="3.8.12\n")
+
+    monkeypatch.setenv("PATH", str(root / "shims"))
+    monkeypatch.setenv("PYENV_ROOT", str(root))
+    monkeypatch.setenv("PYENV_VERSION", "3.8.6")
+    monkeypatch.chdir(tmp_path)
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.8", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(env_binary)
+
+
+def test_shim_uses_global_version_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _create_version_manager(tmp_path, "PYENV_ROOT")
+    real_binary = _create_versioned_binary(root, ("versions",), "3.10.1", "python3.10")
+    shim = root / "shims" / "python3.10"
+    shim.touch(mode=0o755)
+    (root / "version").write_text(encoding="utf-8", data="3.10.1\n")
+    workdir = tmp_path / "workdir"
+    workdir.mkdir()
+
+    monkeypatch.setenv("PATH", str(root / "shims"))
+    monkeypatch.setenv("PYENV_ROOT", str(root))
+    monkeypatch.delenv("PYENV_VERSION", raising=False)
+    monkeypatch.chdir(workdir)
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.10", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(real_binary)
+
+
+def test_shim_colon_separated_pyenv_version_picks_first_match(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _create_version_manager(tmp_path, "PYENV_ROOT")
+    _create_versioned_binary(root, ("versions",), "3.8.12", "python3.8")
+    second_binary = _create_versioned_binary(root, ("versions",), "3.8.6", "python3.8")
+    shim = root / "shims" / "python3.8"
+    shim.touch(mode=0o755)
+
+    monkeypatch.setenv("PATH", str(root / "shims"))
+    monkeypatch.setenv("PYENV_ROOT", str(root))
+    monkeypatch.setenv("PYENV_VERSION", "3.9.1:3.8.6")
+
+    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+        mock_from_exe.return_value = None
+        get_interpreter("python3.8", [])
+        mock_from_exe.assert_called_once()
+        assert mock_from_exe.call_args[0][0] == str(second_binary)

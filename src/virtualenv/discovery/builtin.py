@@ -169,6 +169,9 @@ def propose_interpreters(  # noqa: C901, PLR0912, PLR0915
         LOGGER.debug(LazyPathDump(pos, path, env))
         for exe, impl_must_match in find_candidates(path):
             exe_raw = str(exe)
+            if resolved := _resolve_shim(exe_raw, env):
+                LOGGER.debug("resolved shim %s to %s", exe_raw, resolved)
+                exe_raw = resolved
             exe_id = fs_path_id(exe_raw)
             if exe_id in tested_exes:
                 continue
@@ -253,6 +256,74 @@ def path_exe_finder(spec: PythonSpec) -> Callable[[Path], Generator[tuple[Path, 
                 yield exe.absolute(), match["impl"] == "python"
 
     return path_exes
+
+
+def _resolve_shim(exe_path: str, env: Mapping[str, str]) -> str | None:
+    """Resolve a version-manager shim to the actual Python binary.
+
+    Version managers like pyenv, mise, and asdf place shim scripts in a directory on PATH that delegate to
+    the real Python binary. When run as subprocesses, these shims may resolve to the system Python instead of the
+    version-manager-managed version. This function bypasses the shim by reading the ``.python-version`` file
+    (a convention shared across version managers) and directly locating the binary under the versions directory.
+    """
+    for shims_dir_env, versions_path in _VERSION_MANAGER_LAYOUTS:
+        if root := env.get(shims_dir_env):
+            shims_dir = os.path.join(root, "shims")
+            if os.path.dirname(exe_path) == shims_dir:
+                exe_name = os.path.basename(exe_path)
+                versions_dir = os.path.join(root, *versions_path)
+                return _resolve_shim_to_binary(exe_name, versions_dir, env)
+    return None
+
+
+_VERSION_MANAGER_LAYOUTS: list[tuple[str, tuple[str, ...]]] = [
+    ("PYENV_ROOT", ("versions",)),
+    ("MISE_DATA_DIR", ("installs", "python")),
+    ("ASDF_DATA_DIR", ("installs", "python")),
+]
+
+
+def _resolve_shim_to_binary(exe_name: str, versions_dir: str, env: Mapping[str, str]) -> str | None:
+    for version in _active_versions(env):
+        resolved = os.path.join(versions_dir, version, "bin", exe_name)
+        if os.path.isfile(resolved) and os.access(resolved, os.X_OK):
+            return resolved
+    return None
+
+
+def _active_versions(env: Mapping[str, str]) -> Generator[str, None, None]:
+    """Yield active Python version strings by reading version-manager configuration.
+
+    Checks in priority order: ``PYENV_VERSION`` env var, ``.python-version`` file (searching parent directories
+    from cwd), then the global version file at ``$PYENV_ROOT/version``.
+    """
+    if pyenv_version := env.get("PYENV_VERSION"):
+        yield from pyenv_version.split(":")
+        return
+    if versions := _read_python_version_file(os.getcwd()):
+        yield from versions
+        return
+    if (pyenv_root := env.get("PYENV_ROOT")) and (
+        versions := _read_python_version_file(os.path.join(pyenv_root, "version"), search_parents=False)
+    ):
+        yield from versions
+
+
+def _read_python_version_file(start: str, *, search_parents: bool = True) -> list[str] | None:
+    """Read a ``.python-version`` file, optionally searching parent directories."""
+    current = start
+    while True:
+        candidate = os.path.join(current, ".python-version") if os.path.isdir(current) else current
+        if os.path.isfile(candidate):
+            with open(candidate, encoding="utf-8") as f:
+                if versions := [v for line in f if (v := line.strip()) and not v.startswith("#")]:
+                    return versions
+        if not search_parents:
+            return None
+        parent = os.path.dirname(current)
+        if parent == current:
+            return None
+        current = parent
 
 
 class PathPythonInfo(PythonInfo):
