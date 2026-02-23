@@ -114,7 +114,7 @@ build.targets.sdist.include = [
   "/src",
   "/tests",
   "/tasks",
-  "/tox.ini",
+  "/tox.toml",
 ]
 version.source = "vcs"
 
