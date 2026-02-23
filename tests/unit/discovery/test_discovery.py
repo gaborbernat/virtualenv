@@ -395,7 +395,7 @@ def _create_version_manager(tmp_path: Path, env_var: str) -> Path:
 def _create_versioned_binary(root: Path, versions_path: tuple[str, ...], version: str, exe_name: str) -> Path:
     bin_dir = root.joinpath(*versions_path, version, "bin")
     bin_dir.mkdir(parents=True, exist_ok=True)
-    exe = bin_dir / exe_name
+    exe = bin_dir / (f"{exe_name}.exe" if IS_WIN else exe_name)
     exe.touch()
     exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
     return exe
@@ -413,20 +413,20 @@ def test_shim_resolved_to_real_binary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env_var: str, versions_path: tuple[str, ...]
 ) -> None:
     root = _create_version_manager(tmp_path, env_var)
-    real_binary = _create_versioned_binary(root, versions_path, "3.8.12", "python3.8")
-    shim = root / "shims" / "python3.8"
+    real_binary = _create_versioned_binary(root, versions_path, "2.7.18", "python2.7")
+    shim = root / "shims" / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
 
     monkeypatch.setenv("PATH", str(root / "shims"))
     monkeypatch.setenv(env_var, str(root))
-    monkeypatch.setenv("PYENV_VERSION", "3.8.12")
+    monkeypatch.setenv("PYENV_VERSION", "2.7.18")
     monkeypatch.delenv("MISE_DATA_DIR", raising=False) if env_var != "MISE_DATA_DIR" else None
     monkeypatch.delenv("ASDF_DATA_DIR", raising=False) if env_var != "ASDF_DATA_DIR" else None
     monkeypatch.delenv("PYENV_ROOT", raising=False) if env_var != "PYENV_ROOT" else None
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.8", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(real_binary)
 
@@ -434,7 +434,7 @@ def test_shim_resolved_to_real_binary(
 def test_shim_not_resolved_without_version_manager_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     shims_dir = tmp_path / "shims"
     shims_dir.mkdir()
-    shim = shims_dir / "python3.8"
+    shim = shims_dir / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
 
     monkeypatch.setenv("PATH", str(shims_dir))
@@ -444,33 +444,33 @@ def test_shim_not_resolved_without_version_manager_env(tmp_path: Path, monkeypat
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.8", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(shim)
 
 
 def test_shim_falls_through_when_binary_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _create_version_manager(tmp_path, "PYENV_ROOT")
-    shim = root / "shims" / "python3.8"
+    shim = root / "shims" / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
 
     monkeypatch.setenv("PATH", str(root / "shims"))
     monkeypatch.setenv("PYENV_ROOT", str(root))
-    monkeypatch.setenv("PYENV_VERSION", "3.8.12")
+    monkeypatch.setenv("PYENV_VERSION", "2.7.18")
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.8", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(shim)
 
 
 def test_shim_uses_python_version_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _create_version_manager(tmp_path, "PYENV_ROOT")
-    real_binary = _create_versioned_binary(root, ("versions",), "3.9.7", "python3.9")
-    shim = root / "shims" / "python3.9"
+    real_binary = _create_versioned_binary(root, ("versions",), "2.7.18", "python2.7")
+    shim = root / "shims" / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
-    (tmp_path / ".python-version").write_text(encoding="utf-8", data="3.9.7\n")
+    (tmp_path / ".python-version").write_text(encoding="utf-8", data="2.7.18\n")
 
     monkeypatch.setenv("PATH", str(root / "shims"))
     monkeypatch.setenv("PYENV_ROOT", str(root))
@@ -479,37 +479,37 @@ def test_shim_uses_python_version_file(tmp_path: Path, monkeypatch: pytest.Monke
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.9", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(real_binary)
 
 
 def test_shim_pyenv_version_env_takes_priority_over_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _create_version_manager(tmp_path, "PYENV_ROOT")
-    _create_versioned_binary(root, ("versions",), "3.8.12", "python3.8")
-    env_binary = _create_versioned_binary(root, ("versions",), "3.8.6", "python3.8")
-    shim = root / "shims" / "python3.8"
+    _create_versioned_binary(root, ("versions",), "2.7.18", "python2.7")
+    env_binary = _create_versioned_binary(root, ("versions",), "2.7.15", "python2.7")
+    shim = root / "shims" / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
-    (tmp_path / ".python-version").write_text(encoding="utf-8", data="3.8.12\n")
+    (tmp_path / ".python-version").write_text(encoding="utf-8", data="2.7.18\n")
 
     monkeypatch.setenv("PATH", str(root / "shims"))
     monkeypatch.setenv("PYENV_ROOT", str(root))
-    monkeypatch.setenv("PYENV_VERSION", "3.8.6")
+    monkeypatch.setenv("PYENV_VERSION", "2.7.15")
     monkeypatch.chdir(tmp_path)
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.8", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(env_binary)
 
 
 def test_shim_uses_global_version_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _create_version_manager(tmp_path, "PYENV_ROOT")
-    real_binary = _create_versioned_binary(root, ("versions",), "3.10.1", "python3.10")
-    shim = root / "shims" / "python3.10"
+    real_binary = _create_versioned_binary(root, ("versions",), "2.7.18", "python2.7")
+    shim = root / "shims" / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
-    (root / "version").write_text(encoding="utf-8", data="3.10.1\n")
+    (root / "version").write_text(encoding="utf-8", data="2.7.18\n")
     workdir = tmp_path / "workdir"
     workdir.mkdir()
 
@@ -520,24 +520,24 @@ def test_shim_uses_global_version_file(tmp_path: Path, monkeypatch: pytest.Monke
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.10", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(real_binary)
 
 
 def test_shim_colon_separated_pyenv_version_picks_first_match(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _create_version_manager(tmp_path, "PYENV_ROOT")
-    _create_versioned_binary(root, ("versions",), "3.8.12", "python3.8")
-    second_binary = _create_versioned_binary(root, ("versions",), "3.8.6", "python3.8")
-    shim = root / "shims" / "python3.8"
+    _create_versioned_binary(root, ("versions",), "2.7.18", "python2.7")
+    second_binary = _create_versioned_binary(root, ("versions",), "2.7.15", "python2.7")
+    shim = root / "shims" / ("python2.7.exe" if IS_WIN else "python2.7")
     shim.touch(mode=0o755)
 
     monkeypatch.setenv("PATH", str(root / "shims"))
     monkeypatch.setenv("PYENV_ROOT", str(root))
-    monkeypatch.setenv("PYENV_VERSION", "3.9.1:3.8.6")
+    monkeypatch.setenv("PYENV_VERSION", "3.9.1:2.7.15")
 
     with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
-        get_interpreter("python3.8", [])
+        get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
         assert mock_from_exe.call_args[0][0] == str(second_binary)
