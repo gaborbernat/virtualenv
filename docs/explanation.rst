@@ -206,7 +206,7 @@ When you provide a specifier, virtualenv searches for matching interpreters usin
 3. **PATH search**: Search for executables on the ``PATH`` environment variable with names matching the specification.
 
 Version manager shim resolution
-================================
+===============================
 
 Version managers like `pyenv <https://github.com/pyenv/pyenv>`_, `mise <https://mise.jdx.dev/>`_, and `asdf
 <https://asdf-vm.com/>`_ place lightweight shim scripts on ``PATH`` that delegate to the real Python binary. When

@@ -67,9 +67,9 @@ In this example, /usr/bin/python3.9 is checked first but rejected because it doe
 Using version managers (pyenv, mise, asdf)
 ==========================================
 
-virtualenv automatically resolves shims from `pyenv <https://github.com/pyenv/pyenv>`_,
-`mise <https://mise.jdx.dev/>`_, and `asdf <https://asdf-vm.com/>`_ to the real Python binary. Set the active Python
-version using any of the standard mechanisms and virtualenv will discover it:
+virtualenv automatically resolves shims from `pyenv <https://github.com/pyenv/pyenv>`_, `mise <https://mise.jdx.dev/>`_,
+and `asdf <https://asdf-vm.com/>`_ to the real Python binary. Set the active Python version using any of the standard
+mechanisms and virtualenv will discover it:
 
 .. code-block:: console
 
