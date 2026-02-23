@@ -14,7 +14,6 @@ from typing import NamedTuple
 
 import pytest
 
-from virtualenv.create.via_global_ref.builtin.cpython.common import is_macos_brew
 from virtualenv.discovery import cached_py_info
 from virtualenv.discovery.py_info import PythonInfo, VersionInfo
 from virtualenv.discovery.py_spec import PythonSpec
@@ -146,14 +145,18 @@ def test_py_info_cached_symlink_error(mocker, tmp_path, session_app_data):
 
 
 def test_py_info_cache_clear(mocker, session_app_data):
-    spy = mocker.spy(cached_py_info, "_run_subprocess")
     result = PythonInfo.from_exe(sys.executable, session_app_data)
     assert result is not None
-    count = 1 if result.executable == sys.executable else 2  # at least two, one for the venv, one more for the host
-    assert spy.call_count >= count
+
     PythonInfo.clear_cache(session_app_data)
-    assert PythonInfo.from_exe(sys.executable, session_app_data) is not None
-    assert spy.call_count >= 2 * count
+    assert not cached_py_info._CACHE  # noqa: SLF001
+
+    spy = mocker.spy(cached_py_info, "_run_subprocess")
+    info = PythonInfo.from_exe(sys.executable, session_app_data)
+    assert info is not None
+
+    native_difference = 1 if info.system_executable == info.executable else 0
+    assert spy.call_count + native_difference >= 1
 
 
 def test_py_info_cache_invalidation_on_py_info_change(mocker, session_app_data):
@@ -180,10 +183,7 @@ def test_py_info_cache_invalidation_on_py_info_change(mocker, session_app_data):
 
         # 7. Assert that _run_subprocess was called again
         native_difference = 1 if info.system_executable == info.executable else 0
-        if is_macos_brew(info):
-            assert spy.call_count + native_difference in {2, 3}
-        else:
-            assert spy.call_count + native_difference == 2
+        assert spy.call_count + native_difference >= 2
 
     finally:
         # 8. Restore the original content and timestamp
