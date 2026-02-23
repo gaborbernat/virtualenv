@@ -209,6 +209,26 @@ When you provide a specifier, virtualenv searches for matching interpreters usin
    directories for managed Python installations.
 3. **PATH search**: Search for executables on the ``PATH`` environment variable with names matching the specification.
 
+Version manager shim resolution
+===============================
+
+Version managers like `pyenv <https://github.com/pyenv/pyenv>`_, `mise <https://mise.jdx.dev/>`_, and `asdf
+<https://asdf-vm.com/>`_ place lightweight shim scripts on ``PATH`` that delegate to the real Python binary. When
+virtualenv discovers a Python interpreter by running it as a subprocess, shims may resolve to the wrong Python version
+(typically the system Python) because the shim's resolution logic depends on shell environment state that doesn't fully
+propagate to child processes.
+
+virtualenv detects shims by checking whether the candidate executable lives in a known shim directory
+(``$PYENV_ROOT/shims``, ``$MISE_DATA_DIR/shims``, or ``$ASDF_DATA_DIR/shims``). When a shim is detected, virtualenv
+bypasses it and locates the real binary directly under the version manager's ``versions`` directory, using the active
+version from:
+
+1. The ``PYENV_VERSION`` environment variable (colon-separated for multiple versions).
+2. A ``.python-version`` file in the current directory or any parent directory.
+3. The global version file at ``$PYENV_ROOT/version``.
+
+This convention is shared across pyenv, mise, and asdf, so the same resolution logic works for all three.
+
 .. warning::
 
     Virtual environments typically reference the system Python's standard library. If you upgrade the system Python, the

@@ -1,0 +1,2 @@
+Automatically resolve version manager shims (pyenv, mise, asdf) to the real Python binary during discovery, preventing
+incorrect interpreter selection when shims are on ``PATH`` - by :user:`gaborbernat`.
