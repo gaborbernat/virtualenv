@@ -72,7 +72,9 @@ class DiskContentStore:
 
     def write(self, content: dict) -> None:
         self._folder.mkdir(parents=True, exist_ok=True)
-        self._file.write_text(json.dumps(content, sort_keys=True, indent=2), encoding="utf-8")
+        self._file.write_text(
+            json.dumps(content, sort_keys=True, indent=2), encoding="utf-8"
+        )
         LOGGER.debug("wrote python info at %s", self._file)
 
     def remove(self) -> None:

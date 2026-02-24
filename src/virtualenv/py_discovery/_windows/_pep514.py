@@ -37,8 +37,20 @@ def get_value(key: Any, value_name: str | None) -> Any:
 def discover_pythons() -> Generator[_RegistrySpec, None, None]:
     for hive, hive_name, key, flags, default_arch in [
         (winreg.HKEY_CURRENT_USER, "HKEY_CURRENT_USER", r"Software\Python", 0, 64),  # ty: ignore[unresolved-attribute]
-        (winreg.HKEY_LOCAL_MACHINE, "HKEY_LOCAL_MACHINE", r"Software\Python", winreg.KEY_WOW64_64KEY, 64),  # ty: ignore[unresolved-attribute]
-        (winreg.HKEY_LOCAL_MACHINE, "HKEY_LOCAL_MACHINE", r"Software\Python", winreg.KEY_WOW64_32KEY, 32),  # ty: ignore[unresolved-attribute]
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            "HKEY_LOCAL_MACHINE",
+            r"Software\Python",
+            winreg.KEY_WOW64_64KEY,
+            64,
+        ),  # ty: ignore[unresolved-attribute]
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            "HKEY_LOCAL_MACHINE",
+            r"Software\Python",
+            winreg.KEY_WOW64_32KEY,
+            32,
+        ),  # ty: ignore[unresolved-attribute]
     ]:
         yield from process_set(hive, hive_name, key, flags, default_arch)
 
@@ -66,7 +78,9 @@ def process_company(
                 yield spec
 
 
-def process_tag(hive_name: str, company: str, company_key: Any, tag: str, default_arch: int) -> _RegistrySpec | None:
+def process_tag(
+    hive_name: str, company: str, company_key: Any, tag: str, default_arch: int
+) -> _RegistrySpec | None:
     with winreg.OpenKeyEx(company_key, tag) as tag_key:  # ty: ignore[unresolved-attribute]
         version = load_version_data(hive_name, company, tag, tag_key)
         if version is not None:  # if failed to get version bail
@@ -83,7 +97,9 @@ def process_tag(hive_name: str, company: str, company_key: Any, tag: str, defaul
         return None
 
 
-def load_exe(hive_name: str, company: str, company_key: Any, tag: str) -> tuple[str, str | None] | None:
+def load_exe(
+    hive_name: str, company: str, company_key: Any, tag: str
+) -> tuple[str, str | None] | None:
     key_path = f"{hive_name}/{company}/{tag}"
     try:
         with winreg.OpenKeyEx(company_key, rf"{tag}\InstallPath") as ip_key, ip_key:  # ty: ignore[unresolved-attribute]
@@ -104,7 +120,9 @@ def load_exe(hive_name: str, company: str, company_key: Any, tag: str) -> tuple[
     return None
 
 
-def load_arch_data(hive_name: str, company: str, tag: str, tag_key: Any, default_arch: int) -> int | None:
+def load_arch_data(
+    hive_name: str, company: str, tag: str, tag_key: Any, default_arch: int
+) -> int | None:
     arch_str = get_value(tag_key, "SysArchitecture")
     if arch_str is not None:
         key_path = f"{hive_name}/{company}/{tag}/SysArchitecture"

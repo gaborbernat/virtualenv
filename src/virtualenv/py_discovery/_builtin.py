@@ -41,7 +41,9 @@ class Builtin(Discover):
 
     def run(self) -> PythonInfo | None:
         for python_spec in self.python_spec:
-            result = get_interpreter(python_spec, self.try_first_with, self.cache, self._env)
+            result = get_interpreter(
+                python_spec, self.try_first_with, self.cache, self._env
+            )
             if result is not None:
                 return result
         return None
@@ -52,13 +54,18 @@ class Builtin(Discover):
 
 
 def get_interpreter(
-    key, try_first_with: Iterable[str], cache: PyInfoCache | None = None, env: Mapping[str, str] | None = None
+    key,
+    try_first_with: Iterable[str],
+    cache: PyInfoCache | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> PythonInfo | None:
     spec = PythonSpec.from_string_spec(key)
     LOGGER.info("find interpreter for spec %r", spec)
     proposed_paths = set()
     env = os.environ if env is None else env
-    for interpreter, impl_must_match in propose_interpreters(spec, try_first_with, cache, env):
+    for interpreter, impl_must_match in propose_interpreters(
+        spec, try_first_with, cache, env
+    ):
         key = interpreter.system_executable, impl_must_match
         if key in proposed_paths:
             continue
@@ -149,7 +156,9 @@ def propose_interpreters(
             if exe_id in tested_exes:
                 continue
             tested_exes.add(exe_id)
-            interpreter = PathPythonInfo.from_exe(exe_raw, cache, raise_on_error=False, env=env)
+            interpreter = PathPythonInfo.from_exe(
+                exe_raw, cache, raise_on_error=False, env=env
+            )
             if interpreter is not None:
                 yield interpreter, impl_must_match
 
@@ -161,7 +170,9 @@ def propose_interpreters(
         uv_python_path = user_data_path("uv") / "python"
 
     for exe_path in uv_python_path.glob("*/bin/python"):
-        interpreter = PathPythonInfo.from_exe(str(exe_path), cache, raise_on_error=False, env=env)
+        interpreter = PathPythonInfo.from_exe(
+            str(exe_path), cache, raise_on_error=False, env=env
+        )
         if interpreter is not None:
             yield interpreter, True
 
@@ -195,8 +206,12 @@ class LazyPathDump:
                     if file_path.is_dir():
                         continue
                     if IS_WIN:
-                        pathext = self.env.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";")
-                        if not any(file_path.name.upper().endswith(ext) for ext in pathext):
+                        pathext = self.env.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(
+                            ";"
+                        )
+                        if not any(
+                            file_path.name.upper().endswith(ext) for ext in pathext
+                        ):
                             continue
                     elif not (file_path.stat().st_mode & os.X_OK):
                         continue
@@ -207,7 +222,9 @@ class LazyPathDump:
         return content
 
 
-def path_exe_finder(spec: PythonSpec) -> Callable[[Path], Generator[tuple[Path, bool], None, None]]:
+def path_exe_finder(
+    spec: PythonSpec,
+) -> Callable[[Path], Generator[tuple[Path, bool], None, None]]:
     """Given a spec, return a function that can be called on a path to find all matching files in it."""
     pat = spec.generate_re(windows=sys.platform == "win32")
     direct = spec.str_spec
@@ -246,7 +263,9 @@ _VERSION_MANAGER_LAYOUTS: list[tuple[str, tuple[str, ...]]] = [
 ]
 
 
-def _resolve_shim_to_binary(exe_name: str, versions_dir: str, env: Mapping[str, str]) -> str | None:
+def _resolve_shim_to_binary(
+    exe_name: str, versions_dir: str, env: Mapping[str, str]
+) -> str | None:
     for version in _active_versions(env):
         resolved = os.path.join(versions_dir, version, "bin", exe_name)
         if os.path.isfile(resolved) and os.access(resolved, os.X_OK):
@@ -263,19 +282,29 @@ def _active_versions(env: Mapping[str, str]) -> Generator[str, None, None]:
         yield from versions
         return
     if (pyenv_root := env.get("PYENV_ROOT")) and (
-        versions := _read_python_version_file(os.path.join(pyenv_root, "version"), search_parents=False)
+        versions := _read_python_version_file(
+            os.path.join(pyenv_root, "version"), search_parents=False
+        )
     ):
         yield from versions
 
 
-def _read_python_version_file(start: str, *, search_parents: bool = True) -> list[str] | None:
+def _read_python_version_file(
+    start: str, *, search_parents: bool = True
+) -> list[str] | None:
     """Read a ``.python-version`` file, optionally searching parent directories."""
     current = start
     while True:
-        candidate = os.path.join(current, ".python-version") if os.path.isdir(current) else current
+        candidate = (
+            os.path.join(current, ".python-version")
+            if os.path.isdir(current)
+            else current
+        )
         if os.path.isfile(candidate):
             with open(candidate, encoding="utf-8") as f:
-                if versions := [v for line in f if (v := line.strip()) and not v.startswith("#")]:
+                if versions := [
+                    v for line in f if (v := line.strip()) and not v.startswith("#")
+                ]:
                     return versions
         if not search_parents:
             return None

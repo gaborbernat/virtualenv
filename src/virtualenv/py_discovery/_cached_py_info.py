@@ -82,7 +82,9 @@ def _get_via_file_cache(
         path_modified = -1
     py_info_script = Path(os.path.abspath(__file__)).parent / "_py_info.py"
     try:
-        py_info_hash: str | None = hashlib.sha256(py_info_script.read_bytes()).hexdigest()
+        py_info_hash: str | None = hashlib.sha256(
+            py_info_script.read_bytes()
+        ).hexdigest()
     except OSError:
         py_info_hash = None
 
@@ -105,17 +107,23 @@ def _get_via_file_cache(
         if py_info is None:
             failure, py_info = _run_subprocess(cls, exe, env)
             if failure is not None:
-                LOGGER.debug("first subprocess attempt failed for %s (%s), retrying", exe, failure)
+                LOGGER.debug(
+                    "first subprocess attempt failed for %s (%s), retrying",
+                    exe,
+                    failure,
+                )
                 failure, py_info = _run_subprocess(cls, exe, env)
             if failure is not None:
                 return failure
             if py_info is not None:
-                py_info_store.write({
-                    "st_mtime": path_modified,
-                    "path": path_text,
-                    "content": py_info._to_dict(),
-                    "hash": py_info_hash,
-                })
+                py_info_store.write(
+                    {
+                        "st_mtime": path_modified,
+                        "path": path_text,
+                        "content": py_info._to_dict(),
+                        "hash": py_info_hash,
+                    }
+                )
     if py_info is None:
         msg = f"{exe} failed to produce interpreter info"
         return RuntimeError(msg)
@@ -132,7 +140,9 @@ def _load_cached_py_info(
     except (KeyError, TypeError):
         py_info_store.remove()
         return None
-    if (sys_exe := py_info.system_executable) is not None and not os.path.exists(sys_exe):
+    if (sys_exe := py_info.system_executable) is not None and not os.path.exists(
+        sys_exe
+    ):
         py_info_store.remove()
         return None
     return py_info

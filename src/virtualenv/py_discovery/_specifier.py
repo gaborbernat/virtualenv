@@ -36,7 +36,11 @@ class SimpleVersion:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SimpleVersion):
             return NotImplemented
-        return self.release == other.release and self.pre_type == other.pre_type and self.pre_num == other.pre_num
+        return (
+            self.release == other.release
+            and self.pre_type == other.pre_type
+            and self.pre_num == other.pre_num
+        )
 
     def __hash__(self) -> int:
         return hash((self.release, self.pre_type, self.pre_num))
@@ -126,7 +130,11 @@ class SimpleSpecifier:
     def contains(self, version_str: str) -> bool:
         """Check if a version string satisfies this specifier."""
         try:
-            candidate = SimpleVersion(version_str) if isinstance(version_str, str) else version_str
+            candidate = (
+                SimpleVersion(version_str)
+                if isinstance(version_str, str)
+                else version_str
+            )
         except ValueError:
             return False
 
@@ -142,9 +150,15 @@ class SimpleSpecifier:
         if self.version is None:
             return False
         if self.operator == "==":
-            return candidate.release[: self.wildcard_precision] == self.version.release[: self.wildcard_precision]
+            return (
+                candidate.release[: self.wildcard_precision]
+                == self.version.release[: self.wildcard_precision]
+            )
         if self.operator == "!=":
-            return candidate.release[: self.wildcard_precision] != self.version.release[: self.wildcard_precision]
+            return (
+                candidate.release[: self.wildcard_precision]
+                != self.version.release[: self.wildcard_precision]
+            )
         return False
 
     def _check_standard(self, candidate: SimpleVersion) -> bool:

@@ -62,7 +62,16 @@ class PythonSpec:
 
     @classmethod
     def from_string_spec(cls, string_spec: str) -> PythonSpec:
-        impl, major, minor, micro, threaded, arch, machine, path = None, None, None, None, None, None, None, None
+        impl, major, minor, micro, threaded, arch, machine, path = (
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
         version_specifier = None
         if os.path.isabs(string_spec):
             path = string_spec
@@ -146,7 +155,11 @@ class PythonSpec:
         version = r"{}(\.{}(\.{})?)?".format(
             *(r"\d+" if v is None else v for v in (self.major, self.minor, self.micro))
         )
-        impl = "python" if self.implementation is None else f"python|{re.escape(self.implementation)}"
+        impl = (
+            "python"
+            if self.implementation is None
+            else f"python|{re.escape(self.implementation)}"
+        )
         mod = "t?" if self.free_threaded else ""
         suffix = r"\.exe" if windows else ""
         version_conditional = "?" if windows or self.major is None else ""
@@ -203,15 +216,23 @@ class PythonSpec:
             return False
         if spec.architecture is not None and spec.architecture != self.architecture:
             return False
-        if spec.machine is not None and self.machine is not None and spec.machine != self.machine:
+        if (
+            spec.machine is not None
+            and self.machine is not None
+            and spec.machine != self.machine
+        ):
             return False
         if spec.free_threaded is not None and spec.free_threaded != self.free_threaded:
             return False
 
-        if spec.version_specifier is not None and not self._check_version_specifier(spec):
+        if spec.version_specifier is not None and not self._check_version_specifier(
+            spec
+        ):
             return False
 
-        for our, req in zip((self.major, self.minor, self.micro), (spec.major, spec.minor, spec.micro)):
+        for our, req in zip(
+            (self.major, self.minor, self.micro), (spec.major, spec.minor, spec.micro)
+        ):
             if req is not None and our is not None and our != req:
                 return False
         return True

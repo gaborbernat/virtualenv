@@ -25,12 +25,18 @@ if TYPE_CHECKING:
     from ._cache import PyInfoCache
     from ._py_spec import PythonSpec
 
-VersionInfo = namedtuple("VersionInfo", ["major", "minor", "micro", "releaselevel", "serial"])
+VersionInfo = namedtuple(
+    "VersionInfo", ["major", "minor", "micro", "releaselevel", "serial"]
+)
 LOGGER = logging.getLogger(__name__)
 
 
 def _get_path_extensions():
-    return list(OrderedDict.fromkeys(["", *os.environ.get("PATHEXT", "").lower().split(os.pathsep)]))
+    return list(
+        OrderedDict.fromkeys(
+            ["", *os.environ.get("PATHEXT", "").lower().split(os.pathsep)]
+        )
+    )
 
 
 EXTENSIONS = _get_path_extensions()
@@ -42,7 +48,9 @@ class PythonInfo:
 
     def __init__(self) -> None:
         def abs_path(v):
-            return None if v is None else os.path.abspath(v)  # unroll relative elements from path (e.g. ..)
+            return (
+                None if v is None else os.path.abspath(v)
+            )  # unroll relative elements from path (e.g. ..)
 
         # qualifies the python
         self.platform = sys.platform
@@ -80,8 +88,12 @@ class PythonInfo:
         self.exec_prefix = abs_path(getattr(sys, "exec_prefix", None))
 
         self.executable = abs_path(sys.executable)  # the executable we were invoked via
-        self.original_executable = abs_path(self.executable)  # the executable as known by the interpreter
-        self.system_executable = self._fast_get_system_executable()  # the executable we are based of (if available)
+        self.original_executable = abs_path(
+            self.executable
+        )  # the executable as known by the interpreter
+        self.system_executable = (
+            self._fast_get_system_executable()
+        )  # the executable we are based of (if available)
 
         try:
             __import__("venv")
@@ -98,7 +110,8 @@ class PythonInfo:
         if "venv" in scheme_names:
             self.sysconfig_scheme = "venv"
             self.sysconfig_paths = {
-                i: sysconfig.get_path(i, expand=False, scheme=self.sysconfig_scheme) for i in sysconfig.get_path_names()
+                i: sysconfig.get_path(i, expand=False, scheme=self.sysconfig_scheme)
+                for i in sysconfig.get_path_names()
             }
             # we cannot use distutils at all if "venv" exists, distutils don't know it
             self.distutils_install = {}
@@ -108,17 +121,25 @@ class PythonInfo:
         elif sys.version_info[:2] == (3, 10) and "deb_system" in scheme_names:
             self.sysconfig_scheme = "posix_prefix"
             self.sysconfig_paths = {
-                i: sysconfig.get_path(i, expand=False, scheme=self.sysconfig_scheme) for i in sysconfig.get_path_names()
+                i: sysconfig.get_path(i, expand=False, scheme=self.sysconfig_scheme)
+                for i in sysconfig.get_path_names()
             }
             # we cannot use distutils at all if "venv" exists, distutils don't know it
             self.distutils_install = {}
         else:
             self.sysconfig_scheme = None
-            self.sysconfig_paths = {i: sysconfig.get_path(i, expand=False) for i in sysconfig.get_path_names()}
+            self.sysconfig_paths = {
+                i: sysconfig.get_path(i, expand=False)
+                for i in sysconfig.get_path_names()
+            }
             self.distutils_install = self._distutils_install().copy()
 
         # https://bugs.python.org/issue22199
-        makefile = getattr(sysconfig, "get_makefile_filename", getattr(sysconfig, "_get_makefile_filename", None))
+        makefile = getattr(
+            sysconfig,
+            "get_makefile_filename",
+            getattr(sysconfig, "_get_makefile_filename", None),
+        )
         self.sysconfig = {
             k: v
             for k, v in [
@@ -134,7 +155,9 @@ class PythonInfo:
         config_var_keys.add("PYTHONFRAMEWORK")
         config_var_keys.update(("Py_ENABLE_SHARED", "INSTSONAME", "LIBDIR"))
 
-        self.sysconfig_vars = {i: sysconfig.get_config_var(i or "") for i in config_var_keys}
+        self.sysconfig_vars = {
+            i: sysconfig.get_config_var(i or "") for i in config_var_keys
+        }
 
         if "TCL_LIBRARY" in os.environ:
             self.tcl_lib, self.tk_lib = self._get_tcl_tk_libs()
@@ -142,7 +165,11 @@ class PythonInfo:
             self.tcl_lib, self.tk_lib = None, None
 
         confs = {
-            k: (self.system_prefix if isinstance(v, str) and v.startswith(self.prefix) else v)
+            k: (
+                self.system_prefix
+                if isinstance(v, str) and v.startswith(self.prefix)
+                else v
+            )
             for k, v in self.sysconfig_vars.items()
         }
         self.system_stdlib = self.sysconfig_path("stdlib", confs)
@@ -207,14 +234,19 @@ class PythonInfo:
         """Try to get the system executable by just looking at properties."""
         # if we're not in a virtual environment, this is already a system python, so return the original executable
         # note we must choose the original and not the pure executable as shim scripts might throw us off
-        if not (self.real_prefix or (self.base_prefix is not None and self.base_prefix != self.prefix)):
+        if not (
+            self.real_prefix
+            or (self.base_prefix is not None and self.base_prefix != self.prefix)
+        ):
             return self.original_executable
 
         # if this is NOT a virtual environment, can't determine easily, bail out
         if self.real_prefix is not None:
             return None
 
-        base_executable = getattr(sys, "_base_executable", None)  # some platforms may set this to help us
+        base_executable = getattr(
+            sys, "_base_executable", None
+        )  # some platforms may set this to help us
         if base_executable is None:  # use the saved system executable if present
             return None
 
@@ -266,10 +298,19 @@ class PythonInfo:
 
         """
         result = self.distutils_install.get(key)
-        if result is None:  # use sysconfig if sysconfig_scheme is set or distutils is unavailable
+        if (
+            result is None
+        ):  # use sysconfig if sysconfig_scheme is set or distutils is unavailable
             # set prefixes to empty => result is relative from cwd
-            prefixes = self.prefix, self.exec_prefix, self.base_prefix, self.base_exec_prefix
-            config_var = {k: "" if v in prefixes else v for k, v in self.sysconfig_vars.items()}
+            prefixes = (
+                self.prefix,
+                self.exec_prefix,
+                self.base_prefix,
+                self.base_exec_prefix,
+            )
+            config_var = {
+                k: "" if v in prefixes else v for k, v in self.sysconfig_vars.items()
+            }
             result = self.sysconfig_path(key, config_var=config_var).lstrip(os.sep)
         return result
 
@@ -290,7 +331,9 @@ class PythonInfo:
             except ImportError:  # if removed or not installed ignore
                 return {}
 
-        d = dist.Distribution({"script_args": "--no-user-cfg"})  # conf files not parsed so they do not hijack paths
+        d = dist.Distribution(
+            {"script_args": "--no-user-cfg"}
+        )  # conf files not parsed so they do not hijack paths
         if hasattr(sys, "_framework"):
             sys._framework = None  # disable macOS static paths for framework
 
@@ -300,7 +343,10 @@ class PythonInfo:
 
         i.prefix = os.sep  # paths generated are relative to prefix that contains the path sep, this makes it relative
         i.finalize_options()
-        return {key: (getattr(i, f"install_{key}")[1:]).lstrip(os.sep) for key in SCHEME_KEYS}
+        return {
+            key: (getattr(i, f"install_{key}")[1:]).lstrip(os.sep)
+            for key in SCHEME_KEYS
+        }
 
     @property
     def version_str(self) -> str:
@@ -328,7 +374,9 @@ class PythonInfo:
         """``True`` if this interpreter runs inside a PEP 405 venv (has ``base_prefix``)."""
         return self.base_prefix is not None
 
-    def sysconfig_path(self, key: str, config_var: dict[str, str] | None = None, sep: str = os.sep) -> str:
+    def sysconfig_path(
+        self, key: str, config_var: dict[str, str] | None = None, sep: str = os.sep
+    ) -> str:
         """Return the sysconfig install path for a scheme key, optionally substituting config variables.
 
         :param key: the sysconfig path name (e.g. ``stdlib``, ``purelib``)
@@ -355,13 +403,21 @@ class PythonInfo:
         path = self.sysconfig_path(
             "include",
             {
-                k: (self.system_prefix if isinstance(v, str) and v.startswith(self.prefix) else v)
+                k: (
+                    self.system_prefix
+                    if isinstance(v, str) and v.startswith(self.prefix)
+                    else v
+                )
                 for k, v in self.sysconfig_vars.items()
             },
         )
-        if not os.path.exists(path):  # some broken packaging don't respect the sysconfig, fallback to distutils path
+        if not os.path.exists(
+            path
+        ):  # some broken packaging don't respect the sysconfig, fallback to distutils path
             # the pattern include the distribution name too at the end, remove that via the parent call
-            fallback = os.path.join(self.prefix, os.path.dirname(self.install_path("headers")))
+            fallback = os.path.join(
+                self.prefix, os.path.dirname(self.install_path("headers"))
+            )
             if os.path.exists(fallback):
                 path = fallback
         return path
@@ -391,20 +447,25 @@ class PythonInfo:
                     ("spec", self.spec),
                     (
                         "system"
-                        if self.system_executable is not None and self.system_executable != self.executable
+                        if self.system_executable is not None
+                        and self.system_executable != self.executable
                         else None,
                         self.system_executable,
                     ),
                     (
                         "original"
-                        if self.original_executable not in {self.system_executable, self.executable}
+                        if self.original_executable
+                        not in {self.system_executable, self.executable}
                         else None,
                         self.original_executable,
                     ),
                     ("exe", self.executable),
                     ("platform", self.platform),
                     ("version", repr(self.version)),
-                    ("encoding_fs_io", f"{self.file_system_encoding}-{self.stdout_encoding}"),
+                    (
+                        "encoding_fs_io",
+                        f"{self.file_system_encoding}-{self.stdout_encoding}",
+                    ),
                 )
                 if k is not None
             ),
@@ -508,7 +569,9 @@ class PythonInfo:
             if not spec.version_specifier.contains(release):
                 return False
 
-        for our, req in zip(self.version_info[0:3], (spec.major, spec.minor, spec.micro)):
+        for our, req in zip(
+            self.version_info[0:3], (spec.major, spec.minor, spec.micro)
+        ):
             if req is not None and our is not None and our != req:
                 return False
         return True
@@ -528,7 +591,9 @@ class PythonInfo:
 
         """
         if cls._current is None:
-            result = cls.from_exe(sys.executable, cache, raise_on_error=True, resolve_to_host=False)
+            result = cls.from_exe(
+                sys.executable, cache, raise_on_error=True, resolve_to_host=False
+            )
             if result is None:
                 msg = "failed to query current Python interpreter"
                 raise RuntimeError(msg)
@@ -545,7 +610,9 @@ class PythonInfo:
 
         """
         if cls._current_system is None:
-            result = cls.from_exe(sys.executable, cache, raise_on_error=True, resolve_to_host=True)
+            result = cls.from_exe(
+                sys.executable, cache, raise_on_error=True, resolve_to_host=True
+            )
             if result is None:
                 msg = "failed to query current system Python interpreter"
                 raise RuntimeError(msg)
@@ -557,10 +624,15 @@ class PythonInfo:
         return json.dumps(self._to_dict(), indent=2)
 
     def _to_dict(self):
-        data = {var: (getattr(self, var) if var != "_creators" else None) for var in vars(self)}
+        data = {
+            var: (getattr(self, var) if var != "_creators" else None)
+            for var in vars(self)
+        }
 
         version_info = data["version_info"]
-        data["version_info"] = version_info._asdict() if hasattr(version_info, "_asdict") else version_info
+        data["version_info"] = (
+            version_info._asdict() if hasattr(version_info, "_asdict") else version_info
+        )
         return data
 
     @classmethod
@@ -588,7 +660,14 @@ class PythonInfo:
         from ._cached_py_info import from_exe
 
         env = os.environ if env is None else env
-        proposed = from_exe(cls, cache, exe, env=env, raise_on_error=raise_on_error, ignore_cache=ignore_cache)
+        proposed = from_exe(
+            cls,
+            cache,
+            exe,
+            env=env,
+            raise_on_error=raise_on_error,
+            ignore_cache=ignore_cache,
+        )
 
         if isinstance(proposed, PythonInfo) and resolve_to_host:
             try:
@@ -596,7 +675,11 @@ class PythonInfo:
             except Exception as exception:
                 if raise_on_error:
                     raise
-                LOGGER.info("ignore %s due cannot resolve system due to %r", proposed.original_executable, exception)
+                LOGGER.info(
+                    "ignore %s due cannot resolve system due to %r",
+                    proposed.original_executable,
+                    exception,
+                )
                 proposed = None
         return proposed
 
@@ -608,7 +691,9 @@ class PythonInfo:
 
     @classmethod
     def _from_dict(cls, data):
-        data["version_info"] = VersionInfo(**data["version_info"])  # restore this to a named tuple structure
+        data["version_info"] = VersionInfo(
+            **data["version_info"]
+        )  # restore this to a named tuple structure
         result = cls()
         result.__dict__ = data.copy()
         return result
@@ -626,8 +711,12 @@ class PythonInfo:
                     break
                 for at, (p, t) in enumerate(prefixes.items(), start=1):
                     LOGGER.error("%d: prefix=%s, info=%r", at, p, t)
-                LOGGER.error("%d: prefix=%s, info=%r", len(prefixes) + 1, prefix, target)
-                msg = "prefixes are causing a circle {}".format("|".join(prefixes.keys()))
+                LOGGER.error(
+                    "%d: prefix=%s, info=%r", len(prefixes) + 1, prefix, target
+                )
+                msg = "prefixes are causing a circle {}".format(
+                    "|".join(prefixes.keys())
+                )
                 raise RuntimeError(msg)
             prefixes[prefix] = target
             target = target.discover_exe(cache, prefix=prefix, exact=False)
@@ -659,7 +748,12 @@ class PythonInfo:
         """
         key = prefix, exact
         if key in self._cache_exe_discovery and prefix:
-            LOGGER.debug("discover exe from cache %s - exact %s: %r", prefix, exact, self._cache_exe_discovery[key])
+            LOGGER.debug(
+                "discover exe from cache %s - exact %s: %r",
+                prefix,
+                exact,
+                self._cache_exe_discovery[key],
+            )
             return self._cache_exe_discovery[key]
         LOGGER.debug("discover exe for %s in %s", self, prefix)
         possible_names = self._find_possible_exe_names()
@@ -676,16 +770,24 @@ class PythonInfo:
             info = self._select_most_likely(discovered, self)
             folders = os.pathsep.join(possible_folders)
             self._cache_exe_discovery[key] = info
-            LOGGER.debug("no exact match found, chosen most similar of %s within base folders %s", info, folders)
+            LOGGER.debug(
+                "no exact match found, chosen most similar of %s within base folders %s",
+                info,
+                folders,
+            )
             return info
-        msg = "failed to detect {} in {}".format("|".join(possible_names), os.pathsep.join(possible_folders))
+        msg = "failed to detect {} in {}".format(
+            "|".join(possible_names), os.pathsep.join(possible_folders)
+        )
         raise RuntimeError(msg)
 
     def _check_exe(self, cache, folder, name, exact, discovered, env):
         exe_path = os.path.join(folder, name)
         if not os.path.exists(exe_path):
             return None
-        info = self.from_exe(exe_path, cache, resolve_to_host=False, raise_on_error=False, env=env)
+        info = self.from_exe(
+            exe_path, cache, resolve_to_host=False, raise_on_error=False, env=env
+        )
         if info is None:  # ignore if for some reason we can't query
             return None
         for item in ["implementation", "architecture", "machine", "version_info"]:
@@ -693,9 +795,18 @@ class PythonInfo:
             searched = getattr(self, item)
             if found != searched:
                 if item == "version_info":
-                    found, searched = ".".join(str(i) for i in found), ".".join(str(i) for i in searched)
+                    found, searched = (
+                        ".".join(str(i) for i in found),
+                        ".".join(str(i) for i in searched),
+                    )
                 executable = info.executable
-                LOGGER.debug("refused interpreter %s because %s differs %s != %s", executable, item, found, searched)
+                LOGGER.debug(
+                    "refused interpreter %s because %s differs %s != %s",
+                    executable,
+                    item,
+                    found,
+                    searched,
+                )
                 if exact is False:
                     discovered.append(info)
                 break
@@ -720,9 +831,14 @@ class PythonInfo:
                 info.version_info.releaselevel == target.version_info.releaselevel,
                 info.version_info.serial == target.version_info.serial,
             ]
-            return sum((1 << pos if match else 0) for pos, match in enumerate(reversed(matches)))
+            return sum(
+                (1 << pos if match else 0)
+                for pos, match in enumerate(reversed(matches))
+            )
 
-        sorted_discovered = sorted(discovered, key=sort_by, reverse=True)  # sort by priority in decreasing order
+        sorted_discovered = sorted(
+            discovered, key=sort_by, reverse=True
+        )  # sort by priority in decreasing order
         return sorted_discovered[0]
 
     def _find_possible_folders(self, inside_folder):
