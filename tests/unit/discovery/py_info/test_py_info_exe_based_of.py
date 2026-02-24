@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from virtualenv.discovery.py_info import EXTENSIONS, PythonInfo
 from virtualenv.info import IS_WIN, fs_is_case_sensitive, fs_supports_symlink
+from virtualenv.py_discovery import PythonInfo
+from virtualenv.py_discovery._py_info import EXTENSIONS
 
 CURRENT = PythonInfo.current()
 
@@ -37,7 +38,7 @@ BASE = _discover_base_folders()
 @pytest.mark.parametrize("arch", [CURRENT.architecture, ""])
 @pytest.mark.parametrize("version", [".".join(str(i) for i in CURRENT.version_info[0:i]) for i in range(3, 0, -1)])
 @pytest.mark.parametrize("impl", [CURRENT.implementation, "python"])
-def test_discover_ok(tmp_path, suffix, impl, version, arch, into, caplog, session_app_data):  # noqa: PLR0913
+def test_discover_ok(tmp_path, suffix, impl, version, arch, into, caplog, session_app_data):
     caplog.set_level(logging.DEBUG)
     folder = tmp_path / into
     folder.mkdir(parents=True, exist_ok=True)
@@ -62,6 +63,6 @@ def test_discover_ok(tmp_path, suffix, impl, version, arch, into, caplog, sessio
     assert "get interpreter info via cmd: " in caplog.text
 
     dest.rename(dest.parent / (dest.name + "-1"))
-    CURRENT._cache_exe_discovery.clear()  # noqa: SLF001
+    CURRENT._cache_exe_discovery.clear()
     with pytest.raises(RuntimeError):
         CURRENT.discover_exe(session_app_data, inside_folder)

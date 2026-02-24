@@ -180,14 +180,41 @@ lint.ignore = [
 lint.per-file-ignores."src/virtualenv/activation/python/activate_this.py" = [
   "F821", # ignore undefined template string placeholders
 ]
+lint.per-file-ignores."src/virtualenv/discovery/**/*.py" = [
+  "FBT",     # boolean arguments inherited from py_discovery API
+  "PLC0415", # lazy imports for circular dependencies
+  "SLF001",  # private member access on monkey-patched methods
+]
+lint.per-file-ignores."src/virtualenv/py_discovery/**/*.py" = [
+  "C901",    # complex discovery/matching logic
+  "FBT",     # boolean arguments are part of the public API
+  "PLC0415", # lazy imports for optional/circular dependencies
+  "PLR0904", # PythonInfo has many public methods by design
+  "PLR0911", # multiple return points in matching logic
+  "PLR0912", # many branches in discovery/matching
+  "PLR0913", # many parameters in factory methods
+  "PLR0915", # many statements in PythonInfo.__init__
+  "PLR1702", # nested parsing logic in PythonSpec
+  "PLR2004", # magic values in version parsing (2, 3, 4, 9, 32, 64)
+  "PYI024",  # namedtuple needed for 3.8 compat with __future__ annotations
+  "SLF001",  # private member access within package
+  "TRY301",  # raise in try is intentional pattern
+]
 lint.per-file-ignores."tests/**/*.py" = [
+  "ARG001",  # unused function arguments in mock callbacks
+  "ARG005",  # unused lambda arguments in mock callbacks
+  "C901",    # complex test fixtures
   "D",       # don't care about documentation in tests
   "FBT",     # don't care about booleans as positional arguments in tests
   "INP001",  # no implicit namespace
+  "PLC0415", # conditional imports for platform-specific tests
   "PLC2701", # Private import
+  "PLR0913", # many parameters in test functions using fixtures
   "PLR2004", # Magic value used in comparison, consider replacing with a constant variable
   "S101",    # asserts allowed in tests
+  "S102",    # exec used for test data loading
   "S603",    # `subprocess` call: check for execution of untrusted input
+  "SLF001",  # tests access private members
 ]
 lint.isort = { known-first-party = [
   "virtualenv",

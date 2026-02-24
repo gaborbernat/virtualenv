@@ -4,7 +4,7 @@ import logging
 from contextlib import contextmanager
 from subprocess import Popen
 
-from virtualenv.discovery.cached_py_info import LogCmd
+from virtualenv.py_discovery._cached_py_info import LogCmd
 from virtualenv.seed.embed.base_embed import BaseEmbed
 from virtualenv.seed.wheels import Version, get_wheel, pip_wheel_env_run
 

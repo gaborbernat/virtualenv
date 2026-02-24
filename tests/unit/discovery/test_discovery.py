@@ -12,16 +12,17 @@ from uuid import uuid4
 
 import pytest
 
-from virtualenv.discovery.builtin import Builtin, LazyPathDump, get_interpreter, get_paths
-from virtualenv.discovery.py_info import PythonInfo
+from virtualenv.discovery.builtin import Builtin, get_interpreter
 from virtualenv.info import IS_WIN, fs_supports_symlink
+from virtualenv.py_discovery import PythonInfo
+from virtualenv.py_discovery._builtin import LazyPathDump, get_paths
 
 
 @pytest.mark.graalpy
 @pytest.mark.skipif(not fs_supports_symlink(), reason="symlink not supported")
 @pytest.mark.parametrize("case", ["mixed", "lower", "upper"])
 @pytest.mark.parametrize("specificity", ["more", "less", "none"])
-def test_discovery_via_path(monkeypatch, case, specificity, tmp_path, caplog, session_app_data):  # noqa: PLR0913
+def test_discovery_via_path(monkeypatch, case, specificity, tmp_path, caplog, session_app_data):
     caplog.set_level(logging.DEBUG)
     current = PythonInfo.current_system(session_app_data)
     name = "somethingVeryCryptic"
@@ -78,7 +79,7 @@ def test_discovery_via_path_in_nonbrowseable_directory(tmp_path, monkeypatch):
 
 
 def test_relative_path(session_app_data, monkeypatch):
-    sys_executable = Path(PythonInfo.current_system(app_data=session_app_data).system_executable)
+    sys_executable = Path(PythonInfo.current_system(session_app_data).system_executable)
     cwd = sys_executable.parents[1]
     monkeypatch.chdir(str(cwd))
     relative = str(sys_executable.relative_to(cwd))
@@ -94,7 +95,7 @@ def test_uv_python(monkeypatch, tmp_path_factory, mocker):
 
     # UV_PYTHON_INSTALL_DIR
     uv_python_install_dir = tmp_path_factory.mktemp("uv_python_install_dir")
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe, monkeypatch.context() as m:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe, monkeypatch.context() as m:
         m.setenv("UV_PYTHON_INSTALL_DIR", str(uv_python_install_dir))
 
         get_interpreter("python", [])
@@ -119,7 +120,7 @@ def test_uv_python(monkeypatch, tmp_path_factory, mocker):
 
     # XDG_DATA_HOME
     xdg_data_home = tmp_path_factory.mktemp("xdg_data_home")
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe, monkeypatch.context() as m:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe, monkeypatch.context() as m:
         m.setenv("XDG_DATA_HOME", str(xdg_data_home))
 
         get_interpreter("python", [])
@@ -134,8 +135,8 @@ def test_uv_python(monkeypatch, tmp_path_factory, mocker):
 
     # User data path
     user_data_path = tmp_path_factory.mktemp("user_data_path")
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe, monkeypatch.context() as m:
-        m.setattr("virtualenv.discovery.builtin.user_data_path", lambda x: user_data_path / x)
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe, monkeypatch.context() as m:
+        m.setattr("virtualenv.py_discovery._builtin.user_data_path", lambda x: user_data_path / x)
 
         get_interpreter("python", [])
         mock_from_exe.assert_not_called()
@@ -177,7 +178,7 @@ def test_discovery_fallback_ok(session_app_data, caplog):
 def mock_get_interpreter(mocker):
     return mocker.patch(
         "virtualenv.discovery.builtin.get_interpreter",
-        lambda key, *args, **kwargs: getattr(mocker.sentinel, key),  # noqa: ARG005
+        lambda key, *args, **kwargs: getattr(mocker.sentinel, key),
     )
 
 
@@ -376,8 +377,8 @@ def test_invalid_discovery_via_env_var(monkeypatch, tmp_path):
 
 def test_invalid_discovery_via_env_var_unit(monkeypatch):
     """Unit test: get_discover raises RuntimeError with helpful message for unknown discovery method."""
-    from virtualenv.config.cli.parser import VirtualEnvConfigParser  # noqa: PLC0415
-    from virtualenv.run.plugin.discovery import get_discover  # noqa: PLC0415
+    from virtualenv.config.cli.parser import VirtualEnvConfigParser
+    from virtualenv.run.plugin.discovery import get_discover
 
     monkeypatch.setenv("VIRTUALENV_DISCOVERY", "nonexistent_plugin")
     parser = VirtualEnvConfigParser()
@@ -424,7 +425,7 @@ def test_shim_resolved_to_real_binary(
     monkeypatch.delenv("ASDF_DATA_DIR", raising=False) if env_var != "ASDF_DATA_DIR" else None
     monkeypatch.delenv("PYENV_ROOT", raising=False) if env_var != "PYENV_ROOT" else None
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
@@ -442,7 +443,7 @@ def test_shim_not_resolved_without_version_manager_env(tmp_path: Path, monkeypat
     monkeypatch.delenv("MISE_DATA_DIR", raising=False)
     monkeypatch.delenv("ASDF_DATA_DIR", raising=False)
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
@@ -458,7 +459,7 @@ def test_shim_falls_through_when_binary_missing(tmp_path: Path, monkeypatch: pyt
     monkeypatch.setenv("PYENV_ROOT", str(root))
     monkeypatch.setenv("PYENV_VERSION", "2.7.18")
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
@@ -477,7 +478,7 @@ def test_shim_uses_python_version_file(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.delenv("PYENV_VERSION", raising=False)
     monkeypatch.chdir(tmp_path)
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
@@ -497,7 +498,7 @@ def test_shim_pyenv_version_env_takes_priority_over_file(tmp_path: Path, monkeyp
     monkeypatch.setenv("PYENV_VERSION", "2.7.15")
     monkeypatch.chdir(tmp_path)
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
@@ -518,7 +519,7 @@ def test_shim_uses_global_version_file(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.delenv("PYENV_VERSION", raising=False)
     monkeypatch.chdir(workdir)
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()
@@ -536,7 +537,7 @@ def test_shim_colon_separated_pyenv_version_picks_first_match(tmp_path: Path, mo
     monkeypatch.setenv("PYENV_ROOT", str(root))
     monkeypatch.setenv("PYENV_VERSION", "3.9.1:2.7.15")
 
-    with patch("virtualenv.discovery.builtin.PathPythonInfo.from_exe") as mock_from_exe:
+    with patch("virtualenv.py_discovery._builtin.PathPythonInfo.from_exe") as mock_from_exe:
         mock_from_exe.return_value = None
         get_interpreter("python2.7", [])
         mock_from_exe.assert_called_once()

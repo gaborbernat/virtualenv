@@ -28,9 +28,10 @@ from virtualenv.create.pyenv_cfg import PyEnvCfg
 from virtualenv.create.via_global_ref import api
 from virtualenv.create.via_global_ref.builtin.cpython.common import is_mac_os_framework, is_macos_brew
 from virtualenv.create.via_global_ref.builtin.cpython.cpython3 import CPython3Posix
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import IS_PYPY, IS_WIN, fs_is_case_sensitive
+from virtualenv.py_discovery import PythonInfo
 from virtualenv.run import cli_run, session_via_cli
+from virtualenv.run.plugin.creators import CreatorSelector
 
 CURRENT = PythonInfo.current_system()
 
@@ -79,7 +80,7 @@ def test_destination_not_write_able(tmp_path, capsys):
 
 
 def cleanup_sys_path(paths):
-    from virtualenv.create.creator import HERE  # noqa: PLC0415
+    from virtualenv.create.creator import HERE
 
     paths = [p.resolve() for p in (Path(os.path.abspath(i)) for i in paths) if p.exists()]
     to_remove = [Path(HERE)]
@@ -93,9 +94,9 @@ def system(session_app_data):
     return get_env_debug_info(Path(CURRENT.system_executable), DEBUG_SCRIPT, session_app_data, os.environ)
 
 
-CURRENT_CREATORS = [i for i in CURRENT.creators().key_to_class if i != "builtin"]
+CURRENT_CREATORS = [i for i in CreatorSelector.for_interpreter(CURRENT).key_to_class if i != "builtin"]
 CREATE_METHODS = []
-for k, v in CURRENT.creators().key_to_meta.items():
+for k, v in CreatorSelector.for_interpreter(CURRENT).key_to_meta.items():
     if k in CURRENT_CREATORS:
         if v.can_copy:
             if k == "venv" and CURRENT.implementation == "PyPy" and CURRENT.pypy_version_info >= [7, 3, 13]:
@@ -110,7 +111,7 @@ for k, v in CURRENT.creators().key_to_meta.items():
     ("creator", "isolated"),
     [pytest.param(*i, id=f"{'-'.join(i[0])}-{i[1]}") for i in product(CREATE_METHODS, ["isolated", "global"])],
 )
-def test_create_no_seed(  # noqa: C901, PLR0912, PLR0913, PLR0915
+def test_create_no_seed(  # noqa: PLR0912, PLR0915
     python,
     creator,
     isolated,
@@ -432,7 +433,9 @@ def test_create_long_path(tmp_path):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("creator", sorted(set(PythonInfo.current_system().creators().key_to_class) - {"builtin"}))
+@pytest.mark.parametrize(
+    "creator", sorted(set(CreatorSelector.for_interpreter(PythonInfo.current_system()).key_to_class) - {"builtin"})
+)
 @pytest.mark.usefixtures("session_app_data")
 def test_create_distutils_cfg(creator, tmp_path, monkeypatch):
     result = cli_run(
@@ -709,9 +712,9 @@ def test_python_path(monkeypatch, tmp_path, python_path_on):
 # https://github.com/pypa/virtualenv/issues/2419
 @pytest.mark.skipif("venv" not in CURRENT_CREATORS, reason="test needs venv creator")
 def test_venv_creator_without_write_perms(tmp_path, mocker):
-    from virtualenv.run.session import Session  # noqa: PLC0415
+    from virtualenv.run.session import Session
 
-    prev = Session._create  # noqa: SLF001
+    prev = Session._create
 
     def func(self):
         prev(self)

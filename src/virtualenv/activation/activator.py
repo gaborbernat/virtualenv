@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
     from virtualenv.config.cli.parser import VirtualEnvOptions
     from virtualenv.create.creator import Creator
-    from virtualenv.discovery.py_info import PythonInfo
+    from virtualenv.py_discovery import PythonInfo
 
 
 class Activator(ABC):

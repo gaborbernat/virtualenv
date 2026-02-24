@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from virtualenv.discovery.py_info import PythonInfo
+from virtualenv.py_discovery import PythonInfo
 from virtualenv.run import cli_run
 
 

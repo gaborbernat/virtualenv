@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 import winreg
 from logging import basicConfig, getLogger
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    _RegistrySpec = tuple[str, int | None, int | None, int, bool, str, str | None]
 
 LOGGER = getLogger(__name__)
 
 
-def enum_keys(key):
+def enum_keys(key: Any) -> Generator[str, None, None]:
     at = 0
     while True:
         try:
@@ -20,14 +27,14 @@ def enum_keys(key):
         at += 1
 
 
-def get_value(key, value_name):
+def get_value(key: Any, value_name: str | None) -> Any:
     try:
         return winreg.QueryValueEx(key, value_name)[0]  # ty: ignore[unresolved-attribute]
     except OSError:
         return None
 
 
-def discover_pythons():
+def discover_pythons() -> Generator[_RegistrySpec, None, None]:
     for hive, hive_name, key, flags, default_arch in [
         (winreg.HKEY_CURRENT_USER, "HKEY_CURRENT_USER", r"Software\Python", 0, 64),  # ty: ignore[unresolved-attribute]
         (winreg.HKEY_LOCAL_MACHINE, "HKEY_LOCAL_MACHINE", r"Software\Python", winreg.KEY_WOW64_64KEY, 64),  # ty: ignore[unresolved-attribute]
@@ -36,7 +43,9 @@ def discover_pythons():
         yield from process_set(hive, hive_name, key, flags, default_arch)
 
 
-def process_set(hive, hive_name, key, flags, default_arch):
+def process_set(
+    hive: int, hive_name: str, key: str, flags: int, default_arch: int
+) -> Generator[_RegistrySpec, None, None]:
     try:
         with winreg.OpenKeyEx(hive, key, 0, winreg.KEY_READ | flags) as root_key:  # ty: ignore[unresolved-attribute]
             for company in enum_keys(root_key):
@@ -47,7 +56,9 @@ def process_set(hive, hive_name, key, flags, default_arch):
         pass
 
 
-def process_company(hive_name, company, root_key, default_arch):
+def process_company(
+    hive_name: str, company: str, root_key: Any, default_arch: int
+) -> Generator[_RegistrySpec, None, None]:
     with winreg.OpenKeyEx(root_key, company) as company_key:  # ty: ignore[unresolved-attribute]
         for tag in enum_keys(company_key):
             spec = process_tag(hive_name, company, company_key, tag, default_arch)
@@ -55,7 +66,7 @@ def process_company(hive_name, company, root_key, default_arch):
                 yield spec
 
 
-def process_tag(hive_name, company, company_key, tag, default_arch):
+def process_tag(hive_name: str, company: str, company_key: Any, tag: str, default_arch: int) -> _RegistrySpec | None:
     with winreg.OpenKeyEx(company_key, tag) as tag_key:  # ty: ignore[unresolved-attribute]
         version = load_version_data(hive_name, company, tag, tag_key)
         if version is not None:  # if failed to get version bail
@@ -72,7 +83,7 @@ def process_tag(hive_name, company, company_key, tag, default_arch):
         return None
 
 
-def load_exe(hive_name, company, company_key, tag):
+def load_exe(hive_name: str, company: str, company_key: Any, tag: str) -> tuple[str, str | None] | None:
     key_path = f"{hive_name}/{company}/{tag}"
     try:
         with winreg.OpenKeyEx(company_key, rf"{tag}\InstallPath") as ip_key, ip_key:  # ty: ignore[unresolved-attribute]
@@ -93,7 +104,7 @@ def load_exe(hive_name, company, company_key, tag):
     return None
 
 
-def load_arch_data(hive_name, company, tag, tag_key, default_arch):
+def load_arch_data(hive_name: str, company: str, tag: str, tag_key: Any, default_arch: int) -> int | None:
     arch_str = get_value(tag_key, "SysArchitecture")
     if arch_str is not None:
         key_path = f"{hive_name}/{company}/{tag}/SysArchitecture"
@@ -104,7 +115,7 @@ def load_arch_data(hive_name, company, tag, tag_key, default_arch):
     return default_arch
 
 
-def parse_arch(arch_str):
+def parse_arch(arch_str: Any) -> int:
     if isinstance(arch_str, str):
         match = re.match(r"^(\d+)bit$", arch_str)
         if match:
@@ -115,7 +126,9 @@ def parse_arch(arch_str):
     raise ValueError(error)
 
 
-def load_version_data(hive_name, company, tag, tag_key):
+def load_version_data(
+    hive_name: str, company: str, tag: str, tag_key: Any
+) -> tuple[int | None, int | None, int | None] | None:
     for candidate, key_path in [
         (get_value(tag_key, "SysVersion"), f"{hive_name}/{company}/{tag}/SysVersion"),
         (tag, f"{hive_name}/{company}/{tag}"),
@@ -128,18 +141,23 @@ def load_version_data(hive_name, company, tag, tag_key):
     return None
 
 
-def parse_version(version_str):
+def parse_version(version_str: Any) -> tuple[int | None, int | None, int | None]:
     if isinstance(version_str, str):
         match = re.match(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?$", version_str)
         if match:
-            return tuple(int(i) if i is not None else None for i in match.groups())
+            g1, g2, g3 = match.groups()
+            return (
+                int(g1) if g1 is not None else None,
+                int(g2) if g2 is not None else None,
+                int(g3) if g3 is not None else None,
+            )
         error = f"invalid format {version_str}"
     else:
         error = f"version is not string: {version_str!r}"
     raise ValueError(error)
 
 
-def load_threaded(hive_name, company, tag, tag_key):
+def load_threaded(hive_name: str, company: str, tag: str, tag_key: Any) -> bool:
     display_name = get_value(tag_key, "DisplayName")
     if display_name is not None:
         if isinstance(display_name, str):
@@ -151,14 +169,15 @@ def load_threaded(hive_name, company, tag, tag_key):
     return bool(re.match(r"^\d+(\.\d+){0,2}t$", tag, flags=re.IGNORECASE))
 
 
-def msg(path, what):
+def msg(path: str, what: object) -> None:
     LOGGER.warning("PEP-514 violation in Windows Registry at %s error: %s", path, what)
 
 
-def _run():
+def _run() -> None:
     basicConfig()
     interpreters = [repr(spec) for spec in discover_pythons()]
-    print("\n".join(sorted(interpreters)))  # noqa: T201
+    sys.stdout.write("\n".join(sorted(interpreters)))
+    sys.stdout.write("\n")
 
 
 if __name__ == "__main__":

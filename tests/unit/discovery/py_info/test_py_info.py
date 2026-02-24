@@ -14,17 +14,17 @@ from typing import NamedTuple
 
 import pytest
 
-from virtualenv.discovery import cached_py_info
-from virtualenv.discovery.py_info import PythonInfo, VersionInfo
-from virtualenv.discovery.py_spec import PythonSpec
 from virtualenv.info import IS_PYPY, IS_WIN, fs_supports_symlink
+from virtualenv.py_discovery import PythonInfo, PythonSpec
+from virtualenv.py_discovery import _cached_py_info as cached_py_info
+from virtualenv.py_discovery._py_info import VersionInfo
 
 CURRENT = PythonInfo.current_system()
 
 
 @pytest.mark.graalpy
 def test_current_as_json():
-    result = CURRENT._to_json()  # noqa: SLF001
+    result = CURRENT._to_json()
     parsed = json.loads(result)
     a, b, c, d, e = sys.version_info
     f = sysconfig.get_config_var("Py_GIL_DISABLED") == 1
@@ -149,7 +149,7 @@ def test_py_info_cache_clear(mocker, session_app_data):
     assert result is not None
 
     PythonInfo.clear_cache(session_app_data)
-    assert not cached_py_info._CACHE  # noqa: SLF001
+    assert not cached_py_info._CACHE
 
     spy = mocker.spy(cached_py_info, "_run_subprocess")
     info = PythonInfo.from_exe(sys.executable, session_app_data)
@@ -167,13 +167,13 @@ def test_py_info_cache_invalidation_on_py_info_change(mocker, session_app_data):
     spy = mocker.spy(cached_py_info, "_run_subprocess")
 
     # 3. Backup py_info.py
-    py_info_script = Path(cached_py_info.__file__).parent / "py_info.py"
+    py_info_script = Path(cached_py_info.__file__).parent / "_py_info.py"
     original_content = py_info_script.read_text(encoding="utf-8")
     original_stat = py_info_script.stat()
 
     try:
         # 4. Clear the in-memory cache
-        mocker.patch.dict(cached_py_info._CACHE, {}, clear=True)  # noqa: SLF001
+        mocker.patch.dict(cached_py_info._CACHE, {}, clear=True)
 
         # 5. Modify py_info.py to invalidate the cache
         py_info_script.write_text(original_content + "\n# a comment", encoding="utf-8")
@@ -253,7 +253,7 @@ class PyInfoMock(NamedTuple):
         ),
     ],
 )
-def test_system_executable_no_exact_match(  # noqa: PLR0913
+def test_system_executable_no_exact_match(
     target,
     discovered,
     position,
@@ -291,7 +291,7 @@ def test_system_executable_no_exact_match(  # noqa: PLR0913
     mocker.patch.object(target_py_info, "_find_possible_exe_names", return_value=names)
     mocker.patch.object(target_py_info, "_find_possible_folders", return_value=[str(tmp_path)])
 
-    def func(k, app_data, resolve_to_host, raise_on_error, env):  # noqa: ARG001
+    def func(k, app_data, resolve_to_host, raise_on_error, env):
         return discovered_with_path[k]
 
     mocker.patch.object(target_py_info, "from_exe", side_effect=func)
@@ -299,7 +299,7 @@ def test_system_executable_no_exact_match(  # noqa: PLR0913
 
     target_py_info.system_executable = None
     target_py_info.executable = str(tmp_path)
-    mapped = target_py_info._resolve_to_system(session_app_data, target_py_info)  # noqa: SLF001
+    mapped = target_py_info._resolve_to_system(session_app_data, target_py_info)
     assert mapped.system_executable == CURRENT.system_executable
     found = discovered_with_path[mapped.base_executable]
     assert found is selected
@@ -356,7 +356,7 @@ def test_discover_exe_on_path_non_spec_name_not_match(mocker):
 
 @pytest.mark.skipif(IS_PYPY, reason="setuptools distutils patching does not work")
 def test_py_info_setuptools():
-    from setuptools.dist import Distribution  # noqa: PLC0415
+    from setuptools.dist import Distribution
 
     assert Distribution
     PythonInfo()
@@ -366,7 +366,7 @@ def test_py_info_setuptools():
 def test_py_info_to_system_raises(session_app_data, mocker, caplog):
     caplog.set_level(logging.DEBUG)
     mocker.patch.object(PythonInfo, "_find_possible_folders", return_value=[])
-    result = PythonInfo.from_exe(sys.executable, app_data=session_app_data, raise_on_error=False)
+    result = PythonInfo.from_exe(sys.executable, session_app_data, raise_on_error=False)
     assert result is None
     log = caplog.records[-1]
     assert log.levelno == logging.INFO
@@ -452,7 +452,7 @@ def test_fallback_existent_system_executable(mocker):
     mocker.patch.object(sys, "executable", current.executable)
 
     # ensure it falls back to an alternate binary name that exists
-    system_executable = current._fast_get_system_executable()  # noqa: SLF001
+    system_executable = current._fast_get_system_executable()
     assert os.path.basename(system_executable) in [
         f"python{v}" for v in (current.version_info.major, f"{current.version_info.major}.{current.version_info.minor}")
     ]
@@ -591,7 +591,7 @@ def test_py_info_machine_derivation(platform, expected):
 def test_py_info_machine_derivation_universal2(mocker, runtime_isa):
     info = copy.deepcopy(CURRENT)
     info.sysconfig_platform = "macosx-11.0-universal2"
-    mocker.patch("virtualenv.discovery.py_info.platform.machine", return_value=runtime_isa)
+    mocker.patch("virtualenv.py_discovery._py_info.platform.machine", return_value=runtime_isa)
     assert info.machine == runtime_isa
 
 
@@ -638,17 +638,17 @@ def test_py_info_satisfies_machine_cross_os_normalization(platform, spec_machine
 
 def test_py_info_to_dict_includes_sysconfig_platform():
     """_to_dict should include sysconfig_platform."""
-    data = CURRENT._to_dict()  # noqa: SLF001
+    data = CURRENT._to_dict()
     assert "sysconfig_platform" in data
     assert data["sysconfig_platform"] == sysconfig.get_platform()
 
 
 def test_py_info_json_round_trip():
     """sysconfig_platform should survive JSON serialization round-trip."""
-    json_str = CURRENT._to_json()  # noqa: SLF001
+    json_str = CURRENT._to_json()
     parsed = json.loads(json_str)
     assert "sysconfig_platform" in parsed
-    restored = PythonInfo._from_json(json_str)  # noqa: SLF001
+    restored = PythonInfo._from_json(json_str)
     assert restored.sysconfig_platform == CURRENT.sysconfig_platform
     assert restored.machine == CURRENT.machine
 
@@ -666,5 +666,5 @@ def test_select_most_likely_prefers_machine_match(target_platform, discovered_pl
     discovered = [copy.deepcopy(CURRENT) for _ in discovered_platforms]
     for d, plat in zip(discovered, discovered_platforms):
         d.sysconfig_platform = plat
-    result = PythonInfo._select_most_likely(discovered, target)  # noqa: SLF001
+    result = PythonInfo._select_most_likely(discovered, target)
     assert result.sysconfig_platform == discovered_platforms[expected_idx]

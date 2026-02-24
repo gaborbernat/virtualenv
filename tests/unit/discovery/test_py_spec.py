@@ -5,9 +5,9 @@ from copy import copy
 
 import pytest
 
-from virtualenv.discovery.py_info import normalize_isa
-from virtualenv.discovery.py_spec import PythonSpec
-from virtualenv.util.specifier import SimpleSpecifierSet as SpecifierSet
+from virtualenv.py_discovery import PythonSpec
+from virtualenv.py_discovery._py_info import normalize_isa
+from virtualenv.py_discovery._specifier import SimpleSpecifierSet as SpecifierSet
 
 
 def test_bad_py_spec():

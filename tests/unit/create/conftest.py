@@ -14,12 +14,12 @@ from subprocess import Popen
 
 import pytest
 
-from virtualenv.discovery.py_info import PythonInfo
+from virtualenv.py_discovery import PythonInfo
 
 CURRENT = PythonInfo.current_system()
 
 
-def root(tmp_path_factory, session_app_data):  # noqa: ARG001
+def root(tmp_path_factory, session_app_data):
     return CURRENT.system_executable
 
 

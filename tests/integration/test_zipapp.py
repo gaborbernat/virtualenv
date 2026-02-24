@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import fs_supports_symlink
+from virtualenv.py_discovery import PythonInfo
 from virtualenv.run import cli_run
 
 HERE = Path(__file__).parent
@@ -78,7 +78,7 @@ def zipapp_test_env(tmp_path_factory):
 
 
 @pytest.fixture
-def call_zipapp(zipapp, tmp_path, zipapp_test_env, temp_app_data):  # noqa: ARG001
+def call_zipapp(zipapp, tmp_path, zipapp_test_env, temp_app_data):
     def _run(*args):
         cmd = [str(zipapp_test_env), str(zipapp), "-vv", str(tmp_path / "env"), *list(args)]
         subprocess.check_call(cmd)
@@ -87,7 +87,7 @@ def call_zipapp(zipapp, tmp_path, zipapp_test_env, temp_app_data):  # noqa: ARG0
 
 
 @pytest.fixture
-def call_zipapp_symlink(zipapp, tmp_path, zipapp_test_env, temp_app_data):  # noqa: ARG001
+def call_zipapp_symlink(zipapp, tmp_path, zipapp_test_env, temp_app_data):
     def _run(*args):
         symlinked = zipapp.parent / "symlinked_virtualenv.pyz"
         symlinked.symlink_to(str(zipapp))

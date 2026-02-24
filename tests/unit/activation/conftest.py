@@ -187,7 +187,7 @@ class ActivationTester:
         if sys.platform != "win32":
             result = path
         else:
-            from ctypes import create_unicode_buffer, windll  # noqa: PLC0415
+            from ctypes import create_unicode_buffer, windll
 
             buffer_cont = create_unicode_buffer(256)
             get_long_path_name = windll.kernel32.GetLongPathNameW
@@ -197,7 +197,7 @@ class ActivationTester:
 
 
 class RaiseOnNonSourceCall(ActivationTester):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         of_class,
         session,
