@@ -199,6 +199,7 @@ class Creator(ABC):
     def set_pyenv_cfg(self):
         self.pyenv_cfg.content = OrderedDict()
         system_executable = self.interpreter.system_executable or self.interpreter.executable
+        assert system_executable is not None  # noqa: S101
         self.pyenv_cfg["home"] = os.path.dirname(os.path.abspath(system_executable))
         self.pyenv_cfg["implementation"] = self.interpreter.implementation
         self.pyenv_cfg["version_info"] = ".".join(str(i) for i in self.interpreter.version_info)
