@@ -18,7 +18,7 @@ def test_virtualenv_py_race_condition_find_spec(tmp_path):
 
     sys.path.insert(0, str(tmp_path))
     try:
-        import _virtualenv_test
+        import _virtualenv_test  # noqa: PLC0415
 
         finder = _virtualenv_test.finder
 

@@ -175,7 +175,7 @@ def test_populated_read_only_cache_and_symlinked_app_data(tmp_path, current_fast
     assert cli_run(cmd)
     check_call((str(dest.joinpath("bin/python")), "-c", "import pip"))
 
-    cached_py_info._CACHE.clear()  # necessary to re-trigger py info discovery
+    cached_py_info._CACHE.clear()  # noqa: SLF001  # necessary to re-trigger py info discovery
     safe_delete(dest)
 
     # should succeed with special flag when read-only
@@ -201,7 +201,7 @@ def test_populated_read_only_cache_and_copied_app_data(tmp_path, current_fastest
 
     assert cli_run(cmd)
 
-    cached_py_info._CACHE.clear()  # necessary to re-trigger py info discovery
+    cached_py_info._CACHE.clear()  # noqa: SLF001  # necessary to re-trigger py info discovery
     safe_delete(dest)
 
     # should succeed with special flag when read-only

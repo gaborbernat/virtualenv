@@ -35,7 +35,7 @@ from virtualenv.util.subprocess import CREATE_NO_WINDOW
 
 @pytest.fixture(autouse=True)
 def _clear_pypi_info_cache():
-    from virtualenv.seed.wheels.periodic_update import _PYPI_CACHE
+    from virtualenv.seed.wheels.periodic_update import _PYPI_CACHE  # noqa: PLC0415
 
     _PYPI_CACHE.clear()
 
@@ -49,14 +49,7 @@ def test_manual_upgrade(session_app_data, caplog, mocker, for_py_version):
         "manual",
     )
 
-    def _do_update(
-        distribution,
-        for_py_version,
-        embed_filename,
-        app_data,
-        search_dirs,
-        periodic,
-    ):
+    def _do_update(distribution, **_kwargs):
         if distribution == "pip":
             return [new_version]
         return []
@@ -384,14 +377,14 @@ def test_do_update_first(tmp_path, mocker, time_freeze):
     ]
     download_wheels = (Wheel(Path(i[0])) for i in pip_version_remote)
 
-    def _download_wheel(
+    def _download_wheel(  # noqa: PLR0913
         distribution,
-        version_spec,
+        version_spec,  # noqa: ARG001
         for_py_version,
         search_dirs,
         app_data,
         to_folder,
-        env,
+        env,  # noqa: ARG001
     ):
         assert distribution == "pip"
         assert for_py_version == "3.9"
@@ -453,15 +446,7 @@ def test_do_update_skip_already_done(tmp_path, mocker, time_freeze):
     extra = tmp_path / "extra"
     extra.mkdir()
 
-    def _download_wheel(
-        distribution,
-        version_spec,
-        for_py_version,
-        search_dirs,
-        app_data,
-        to_folder,
-        env,
-    ):
+    def _download_wheel(**_kwargs):
         return wheel.path
 
     download_wheel = mocker.patch("virtualenv.seed.wheels.acquire.download_wheel", side_effect=_download_wheel)
@@ -558,7 +543,7 @@ def mock_download(mocker, pip_version_remote):
     do = download()
     return mocker.patch(
         "virtualenv.seed.wheels.acquire.download_wheel",
-        side_effect=lambda *a, **k: next(do),
+        side_effect=lambda *_a, **_k: next(do),
     )
 
 
@@ -652,7 +637,7 @@ def test_download_periodic_stop_at_first_usable(tmp_path, mocker, time_freeze):
     rel_date_gen = iter(rel_date_remote)
     release_date = mocker.patch(
         "virtualenv.seed.wheels.periodic_update.release_date_for_wheel_path",
-        side_effect=lambda *a, **k: next(rel_date_gen),
+        side_effect=lambda *_a, **_k: next(rel_date_gen),
     )
 
     last_update = _UP_NOW - timedelta(days=14)
@@ -684,7 +669,7 @@ def test_download_periodic_stop_at_first_usable_with_previous_minor(tmp_path, mo
     rel_date_gen = iter(rel_date_remote)
     release_date = mocker.patch(
         "virtualenv.seed.wheels.periodic_update.release_date_for_wheel_path",
-        side_effect=lambda *a, **k: next(rel_date_gen),
+        side_effect=lambda *_a, **_k: next(rel_date_gen),
     )
 
     last_update = _UP_NOW - timedelta(days=14)

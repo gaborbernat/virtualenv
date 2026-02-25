@@ -18,7 +18,7 @@ from python_discovery import PythonInfo
 CURRENT = PythonInfo.current_system()
 
 
-def root(tmp_path_factory, session_app_data):
+def root(tmp_path_factory, session_app_data):  # noqa: ARG001
     return CURRENT.system_executable
 
 

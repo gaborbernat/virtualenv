@@ -35,7 +35,7 @@ def test_race_condition_simulation(tmp_path):
             if "_virtualenv" in sys.modules:
                 del sys.modules["_virtualenv"]
 
-            import _virtualenv  # noqa: F401
+            import _virtualenv  # noqa: F401, PLC0415
 
             # Try to trigger find_spec
             try:

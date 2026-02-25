@@ -52,7 +52,7 @@ def test_discovery_fallback_ok(session_app_data, caplog):
 def mock_get_interpreter(mocker):
     return mocker.patch(
         "virtualenv.discovery.builtin.get_interpreter",
-        lambda key, *args, **kwargs: getattr(mocker.sentinel, key),
+        lambda key, *_args, **_kwargs: getattr(mocker.sentinel, key),
     )
 
 
@@ -210,8 +210,8 @@ def test_invalid_discovery_via_env_var(monkeypatch, tmp_path):
 
 def test_invalid_discovery_via_env_var_unit(monkeypatch):
     """Unit test: get_discover raises RuntimeError with helpful message for unknown discovery method."""
-    from virtualenv.config.cli.parser import VirtualEnvConfigParser
-    from virtualenv.run.plugin.discovery import get_discover
+    from virtualenv.config.cli.parser import VirtualEnvConfigParser  # noqa: PLC0415
+    from virtualenv.run.plugin.discovery import get_discover  # noqa: PLC0415
 
     monkeypatch.setenv("VIRTUALENV_DISCOVERY", "nonexistent_plugin")
     parser = VirtualEnvConfigParser()

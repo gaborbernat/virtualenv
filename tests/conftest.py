@@ -54,7 +54,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session")
-def has_symlink_support(tmp_path_factory):
+def has_symlink_support():
     return fs_supports_symlink()
 
 
@@ -64,7 +64,7 @@ def link_folder(has_symlink_support):
         return os.symlink
     if sys.platform == "win32":
         # on Windows junctions may be used instead
-        import _winapi
+        import _winapi  # noqa: PLC0415
 
         return getattr(_winapi, "CreateJunction", None)
     return None
@@ -201,7 +201,7 @@ def coverage_env(monkeypatch, link, request):
     """Enable coverage report collection on the created virtual environments by injecting the coverage project"""
     if COVERAGE_RUN and "_no_coverage" not in request.fixturenames:
         # we inject right after creation, we cannot collect coverage on site.py - used for helper scripts, such as debug
-        from virtualenv import run
+        from virtualenv import run  # noqa: PLC0415
 
         def _session_via_cli(args, options, setup_logging, env=None):
             session = prev_run(args, options, setup_logging, env)
@@ -306,7 +306,7 @@ def special_name_dir(tmp_path, special_char_name):
 
 @pytest.fixture(scope="session")
 def current_creators(session_app_data):
-    from virtualenv.run.plugin.creators import CreatorSelector
+    from virtualenv.run.plugin.creators import CreatorSelector  # noqa: PLC0415
 
     return CreatorSelector.for_interpreter(PythonInfo.current_system(session_app_data))
 

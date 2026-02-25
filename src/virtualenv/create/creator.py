@@ -198,11 +198,12 @@ class Creator(ABC):
 
     def set_pyenv_cfg(self):
         self.pyenv_cfg.content = OrderedDict()
-        self.pyenv_cfg["home"] = os.path.dirname(os.path.abspath(self.interpreter.system_executable))
+        system_executable = self.interpreter.system_executable or self.interpreter.executable
+        self.pyenv_cfg["home"] = os.path.dirname(os.path.abspath(system_executable))
         self.pyenv_cfg["implementation"] = self.interpreter.implementation
         self.pyenv_cfg["version_info"] = ".".join(str(i) for i in self.interpreter.version_info)
         self.pyenv_cfg["version"] = ".".join(str(i) for i in self.interpreter.version_info[:3])
-        self.pyenv_cfg["executable"] = os.path.realpath(self.interpreter.system_executable)
+        self.pyenv_cfg["executable"] = os.path.realpath(system_executable)
         self.pyenv_cfg["command"] = f"{sys.executable} -m virtualenv {self.dest}"
         self.pyenv_cfg["virtualenv"] = __version__
         if self.prompt is not None:
