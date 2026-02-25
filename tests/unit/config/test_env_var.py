@@ -4,11 +4,11 @@ import os
 from pathlib import Path
 
 import pytest
+from python_discovery import PythonInfo
 
 from virtualenv.config.cli.parser import VirtualEnvOptions
 from virtualenv.config.ini import IniConfig
 from virtualenv.create.via_global_ref.builtin.cpython.common import is_macos_brew
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.run import session_via_cli
 
 

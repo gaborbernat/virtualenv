@@ -8,9 +8,10 @@ if TYPE_CHECKING:
     from argparse import ArgumentParser
     from pathlib import Path
 
+    from python_discovery import PythonInfo
+
     from virtualenv.config.cli.parser import VirtualEnvOptions
     from virtualenv.create.creator import Creator
-    from virtualenv.discovery.py_info import PythonInfo
 
 
 class Activator(ABC):

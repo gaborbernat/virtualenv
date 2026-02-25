@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from argparse import ArgumentParser
 
+    from python_discovery import PythonInfo
+
     from virtualenv.app_data.base import AppData
     from virtualenv.config.cli.parser import VirtualEnvOptions
-    from virtualenv.discovery.py_info import PythonInfo
 
-from virtualenv.discovery.cached_py_info import LogCmd
 from virtualenv.util.path import safe_delete
-from virtualenv.util.subprocess import run_cmd
+from virtualenv.util.subprocess import LogCmd, run_cmd
 from virtualenv.version import __version__
 
 from .pyenv_cfg import PyEnvCfg
@@ -198,11 +198,13 @@ class Creator(ABC):
 
     def set_pyenv_cfg(self):
         self.pyenv_cfg.content = OrderedDict()
-        self.pyenv_cfg["home"] = os.path.dirname(os.path.abspath(self.interpreter.system_executable))
+        system_executable = self.interpreter.system_executable or self.interpreter.executable
+        assert system_executable is not None  # noqa: S101
+        self.pyenv_cfg["home"] = os.path.dirname(os.path.abspath(system_executable))
         self.pyenv_cfg["implementation"] = self.interpreter.implementation
         self.pyenv_cfg["version_info"] = ".".join(str(i) for i in self.interpreter.version_info)
         self.pyenv_cfg["version"] = ".".join(str(i) for i in self.interpreter.version_info[:3])
-        self.pyenv_cfg["executable"] = os.path.realpath(self.interpreter.system_executable)
+        self.pyenv_cfg["executable"] = os.path.realpath(system_executable)
         self.pyenv_cfg["command"] = f"{sys.executable} -m virtualenv {self.dest}"
         self.pyenv_cfg["virtualenv"] = __version__
         if self.prompt is not None:

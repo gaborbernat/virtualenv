@@ -8,10 +8,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from types import TracebackType
 
+    from python_discovery import PythonInfo
+
     from virtualenv.activation.activator import Activator
     from virtualenv.app_data.base import AppData
     from virtualenv.create.creator import Creator
-    from virtualenv.discovery.py_info import PythonInfo
     from virtualenv.seed.seeder import Seeder
 
 if sys.version_info >= (3, 11):

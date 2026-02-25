@@ -1,8 +1,25 @@
 from __future__ import annotations
 
 import subprocess
+from shlex import quote
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 CREATE_NO_WINDOW = 0x80000000
+
+
+class LogCmd:
+    def __init__(self, cmd: list[str], env: Mapping[str, str] | None = None) -> None:
+        self.cmd = cmd
+        self.env = env
+
+    def __repr__(self) -> str:
+        cmd_repr = " ".join(quote(str(c)) for c in self.cmd)
+        if self.env is not None:
+            cmd_repr = f"{cmd_repr} env of {self.env!r}"
+        return cmd_repr
 
 
 def run_cmd(cmd):
@@ -26,5 +43,6 @@ def run_cmd(cmd):
 
 __all__ = (
     "CREATE_NO_WINDOW",
+    "LogCmd",
     "run_cmd",
 )

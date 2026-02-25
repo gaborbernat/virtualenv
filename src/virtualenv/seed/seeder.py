@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from argparse import ArgumentParser
 
+    from python_discovery import PythonInfo
+
     from virtualenv.app_data.base import AppData
     from virtualenv.config.cli.parser import VirtualEnvOptions
     from virtualenv.create.creator import Creator
-    from virtualenv.discovery.py_info import PythonInfo
 
 
 class Seeder(ABC):

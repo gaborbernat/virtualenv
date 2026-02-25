@@ -22,7 +22,7 @@ def test_base_bootstrap_via_pip_invoke(tmp_path, coverage_env, mocker, current_f
     for wheel_filename in BUNDLE_SUPPORT[for_py_version].values():
         copy2(str(BUNDLE_FOLDER / wheel_filename), str(extra_search_dir))
 
-    def _load_embed_wheel(app_data, distribution, for_py_version, version):  # noqa: ARG001
+    def _load_embed_wheel(app_data, distribution, _for_py_version, version):
         return load_embed_wheel(app_data, distribution, old_ver, version)
 
     old_ver = "3.8"

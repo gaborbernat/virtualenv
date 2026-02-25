@@ -7,13 +7,14 @@ from pathlib import Path
 from subprocess import Popen
 
 import pytest
+from python_discovery import PythonInfo
 
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.run import cli_run
+from virtualenv.run.plugin.creators import CreatorSelector
 from virtualenv.seed.wheels.embed import BUNDLE_FOLDER as EMBED_WHEEL_DIR
 
 CURRENT = PythonInfo.current_system()
-CREATOR_CLASSES = CURRENT.creators().key_to_class
+CREATOR_CLASSES = CreatorSelector.for_interpreter(CURRENT).key_to_class
 
 
 def builtin_shows_marker_missing():

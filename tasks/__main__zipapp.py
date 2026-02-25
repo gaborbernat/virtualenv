@@ -60,7 +60,9 @@ class VersionPlatformSelect:
 
     def find_distributions(self, context):
         dist_class = versioned_distribution_class()
-        name = context.name
+        if context.name is None:
+            return
+        name = context.name.replace("_", "-")
         if name in self.distributions:
             result = dist_class(file_loader=self.get_data, dist_path=self.distributions[name])
             yield result

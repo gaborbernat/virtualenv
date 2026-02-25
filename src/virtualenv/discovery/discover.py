@@ -1,44 +1,32 @@
+"""Virtualenv-specific Discover base class for plugin-based Python discovery."""
+
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
+    from collections.abc import Mapping
+
+    from python_discovery import PythonInfo
 
     from virtualenv.config.cli.parser import VirtualEnvOptions
-    from virtualenv.discovery.py_info import PythonInfo
 
 
 class Discover(ABC):
-    """Discover and provide the requested Python interpreter."""
-
     @classmethod
     def add_parser_arguments(cls, parser: ArgumentParser) -> None:
-        """Add CLI arguments for this discovery mechanisms.
-
-        :param parser: the CLI parser
-
-        """
         raise NotImplementedError
 
     def __init__(self, options: VirtualEnvOptions) -> None:
-        """Create a new discovery mechanism.
-
-        :param options: the parsed options as defined within :meth:`add_parser_arguments`
-
-        """
         self._has_run = False
         self._interpreter: PythonInfo | None = None
-        self._env = options.env
+        self._env: Mapping[str, str] = options.env if options.env is not None else os.environ
 
     @abstractmethod
     def run(self) -> PythonInfo | None:
-        """Discovers an interpreter.
-
-        :returns: the interpreter ready to use for virtual environment creation
-
-        """
         raise NotImplementedError
 
     @property

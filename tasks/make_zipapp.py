@@ -23,7 +23,7 @@ from packaging.requirements import Requirement
 
 HERE = Path(__file__).parent.absolute()
 
-VERSIONS = [f"3.{i}" for i in range(13, 7, -1)]
+VERSIONS = [f"3.{i}" for i in range(14, 7, -1)]
 
 
 def main():
@@ -71,8 +71,9 @@ def write_packages_to_zipapp(base, dist, modules, packages, zip_app):  # noqa: C
                                 for version in wheel_data.versions:
                                     modules[version][platform][key] = str(dest)
                             if dest.parent.suffix == ".dist-info":
+                                dist_name = dest.parent.stem.split("-")[0].replace("_", "-")
                                 for version in wheel_data.versions:
-                                    dist[version][platform][dest.parent.stem.split("-")[0]] = str(dest.parent)
+                                    dist[version][platform][dist_name] = str(dest.parent)
                         dest_str = str(dest)
                         if dest_str in has:
                             continue

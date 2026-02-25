@@ -49,14 +49,7 @@ def test_manual_upgrade(session_app_data, caplog, mocker, for_py_version):
         "manual",
     )
 
-    def _do_update(  # noqa: PLR0913
-        distribution,
-        for_py_version,  # noqa: ARG001
-        embed_filename,  # noqa: ARG001
-        app_data,  # noqa: ARG001
-        search_dirs,  # noqa: ARG001
-        periodic,  # noqa: ARG001
-    ):
+    def _do_update(distribution, **_kwargs):
         if distribution == "pip":
             return [new_version]
         return []
@@ -453,15 +446,7 @@ def test_do_update_skip_already_done(tmp_path, mocker, time_freeze):
     extra = tmp_path / "extra"
     extra.mkdir()
 
-    def _download_wheel(  # noqa: PLR0913
-        distribution,  # noqa: ARG001
-        version_spec,  # noqa: ARG001
-        for_py_version,  # noqa: ARG001
-        search_dirs,  # noqa: ARG001
-        app_data,  # noqa: ARG001
-        to_folder,  # noqa: ARG001
-        env,  # noqa: ARG001
-    ):
+    def _download_wheel(**_kwargs):
         return wheel.path
 
     download_wheel = mocker.patch("virtualenv.seed.wheels.acquire.download_wheel", side_effect=_download_wheel)
@@ -558,7 +543,7 @@ def mock_download(mocker, pip_version_remote):
     do = download()
     return mocker.patch(
         "virtualenv.seed.wheels.acquire.download_wheel",
-        side_effect=lambda *a, **k: next(do),  # noqa: ARG005
+        side_effect=lambda *_a, **_k: next(do),
     )
 
 
@@ -652,7 +637,7 @@ def test_download_periodic_stop_at_first_usable(tmp_path, mocker, time_freeze):
     rel_date_gen = iter(rel_date_remote)
     release_date = mocker.patch(
         "virtualenv.seed.wheels.periodic_update.release_date_for_wheel_path",
-        side_effect=lambda *a, **k: next(rel_date_gen),  # noqa: ARG005
+        side_effect=lambda *_a, **_k: next(rel_date_gen),
     )
 
     last_update = _UP_NOW - timedelta(days=14)
@@ -684,7 +669,7 @@ def test_download_periodic_stop_at_first_usable_with_previous_minor(tmp_path, mo
     rel_date_gen = iter(rel_date_remote)
     release_date = mocker.patch(
         "virtualenv.seed.wheels.periodic_update.release_date_for_wheel_path",
-        side_effect=lambda *a, **k: next(rel_date_gen),  # noqa: ARG005
+        side_effect=lambda *_a, **_k: next(rel_date_gen),
     )
 
     last_update = _UP_NOW - timedelta(days=14)

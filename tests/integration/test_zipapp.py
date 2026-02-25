@@ -6,8 +6,8 @@ from contextlib import suppress
 from pathlib import Path
 
 import pytest
+from python_discovery import PythonInfo
 
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import fs_supports_symlink
 from virtualenv.run import cli_run
 

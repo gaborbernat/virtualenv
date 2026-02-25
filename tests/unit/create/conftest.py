@@ -13,8 +13,7 @@ import sys
 from subprocess import Popen
 
 import pytest
-
-from virtualenv.discovery.py_info import PythonInfo
+from python_discovery import PythonInfo
 
 CURRENT = PythonInfo.current_system()
 

@@ -4,8 +4,8 @@ import sys
 from uuid import uuid4
 
 import pytest
+from python_discovery import PythonInfo
 
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.run import cli_run
 
 

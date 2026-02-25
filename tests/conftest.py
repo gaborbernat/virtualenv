@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import ClassVar
 
 import pytest
+from python_discovery import PythonInfo
 
 from virtualenv.app_data import AppDataDiskFolder
-from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import IS_GRAALPY, IS_PYPY, IS_RUSTPYTHON, IS_WIN, fs_supports_symlink
 from virtualenv.report import LOGGER
 
@@ -54,7 +54,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session")
-def has_symlink_support(tmp_path_factory):  # noqa: ARG001
+def has_symlink_support():
     return fs_supports_symlink()
 
 
@@ -306,7 +306,9 @@ def special_name_dir(tmp_path, special_char_name):
 
 @pytest.fixture(scope="session")
 def current_creators(session_app_data):
-    return PythonInfo.current_system(session_app_data).creators()
+    from virtualenv.run.plugin.creators import CreatorSelector  # noqa: PLC0415
+
+    return CreatorSelector.for_interpreter(PythonInfo.current_system(session_app_data))
 
 
 @pytest.fixture(scope="session")
