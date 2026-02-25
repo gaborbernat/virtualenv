@@ -59,7 +59,7 @@ class CPythonWindows(CPython, WindowsSupports, ABC):
         python_w = host.parent / "pythonw.exe"
         yield (
             python_w,
-            [python_w.name, *((f"pythonw3.{minor}t.exe",) if interpreter.free_threaded else ())],
+            [python_w.name, "pythonw3.exe", *((f"pythonw3.{minor}t.exe",) if interpreter.free_threaded else ())],
             RefMust.COPY,
             RefWhen.ANY,
         )
