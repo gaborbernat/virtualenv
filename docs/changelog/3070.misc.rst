@@ -1,1 +1,0 @@
-Extract Python discovery into standalone ``python-discovery`` package and depend on it - by :user:`gaborbernat`.
