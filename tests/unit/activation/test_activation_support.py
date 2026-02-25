@@ -3,6 +3,7 @@ from __future__ import annotations
 from argparse import Namespace
 
 import pytest
+from python_discovery import PythonInfo
 
 from virtualenv.activation import (
     BashActivator,
@@ -12,7 +13,6 @@ from virtualenv.activation import (
     PowerShellActivator,
     PythonActivator,
 )
-from virtualenv.py_discovery import PythonInfo
 
 
 @pytest.mark.parametrize(

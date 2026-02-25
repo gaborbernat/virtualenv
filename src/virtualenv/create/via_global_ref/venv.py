@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 from copy import copy
 
+from python_discovery import PythonInfo
+
 from virtualenv.create.via_global_ref.store import handle_store_python
-from virtualenv.py_discovery import PythonInfo
 from virtualenv.util.error import ProcessCallFailedError
 from virtualenv.util.path import ensure_dir
 from virtualenv.util.subprocess import run_cmd

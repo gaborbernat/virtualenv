@@ -7,8 +7,8 @@ from pathlib import Path
 from subprocess import Popen
 
 import pytest
+from python_discovery import PythonInfo
 
-from virtualenv.py_discovery import PythonInfo
 from virtualenv.run import cli_run
 from virtualenv.run.plugin.creators import CreatorSelector
 from virtualenv.seed.wheels.embed import BUNDLE_FOLDER as EMBED_WHEEL_DIR

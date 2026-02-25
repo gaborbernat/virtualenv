@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import ClassVar
 
 import pytest
+from python_discovery import PythonInfo
 
 from virtualenv.app_data import AppDataDiskFolder
 from virtualenv.info import IS_GRAALPY, IS_PYPY, IS_RUSTPYTHON, IS_WIN, fs_supports_symlink
-from virtualenv.py_discovery import PythonInfo
 from virtualenv.report import LOGGER
 
 

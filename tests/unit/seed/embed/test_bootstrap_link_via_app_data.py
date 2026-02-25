@@ -9,10 +9,10 @@ from threading import Thread
 from typing import TYPE_CHECKING
 
 import pytest
+from python_discovery import PythonInfo
+from python_discovery import _cached_py_info as cached_py_info
 
 from virtualenv.info import fs_supports_symlink
-from virtualenv.py_discovery import PythonInfo
-from virtualenv.py_discovery import _cached_py_info as cached_py_info
 from virtualenv.run import cli_run
 from virtualenv.seed.wheels.embed import BUNDLE_FOLDER, BUNDLE_SUPPORT
 from virtualenv.util.path import safe_delete

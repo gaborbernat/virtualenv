@@ -15,13 +15,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from argparse import ArgumentParser
 
+    from python_discovery import PythonInfo
+
     from virtualenv.app_data.base import AppData
     from virtualenv.config.cli.parser import VirtualEnvOptions
-    from virtualenv.py_discovery import PythonInfo
 
-from virtualenv.py_discovery._cached_py_info import LogCmd
 from virtualenv.util.path import safe_delete
-from virtualenv.util.subprocess import run_cmd
+from virtualenv.util.subprocess import LogCmd, run_cmd
 from virtualenv.version import __version__
 
 from .pyenv_cfg import PyEnvCfg

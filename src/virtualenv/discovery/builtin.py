@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from virtualenv.py_discovery import get_interpreter as _get_interpreter
+from python_discovery import get_interpreter as _get_interpreter
 
 from .discover import Discover
 
@@ -13,8 +13,7 @@ if TYPE_CHECKING:
     from argparse import ArgumentParser
     from collections.abc import Iterable, Mapping, Sequence
 
-    from virtualenv.app_data.base import AppData
-    from virtualenv.py_discovery import PyInfoCache, PythonInfo
+    from python_discovery import PyInfoCache, PythonInfo
 
 
 def get_interpreter(
@@ -29,7 +28,7 @@ def get_interpreter(
 
 class Builtin(Discover):
     python_spec: Sequence[str]
-    app_data: AppData
+    app_data: PyInfoCache
     try_first_with: Sequence[str]
 
     def __init__(self, options) -> None:
@@ -69,7 +68,7 @@ class Builtin(Discover):
             if result := get_interpreter(
                 python_spec,
                 self.try_first_with,
-                app_data=self.app_data,  # ty: ignore[invalid-argument-type]
+                app_data=self.app_data,
                 env=self._env,
             ):
                 return result

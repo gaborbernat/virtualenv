@@ -21,6 +21,7 @@ from textwrap import dedent
 from threading import Thread
 
 import pytest
+from python_discovery import PythonInfo
 
 from virtualenv.__main__ import run, run_with_catch
 from virtualenv.create.creator import DEBUG_SCRIPT, Creator, get_env_debug_info
@@ -29,7 +30,6 @@ from virtualenv.create.via_global_ref import api
 from virtualenv.create.via_global_ref.builtin.cpython.common import is_mac_os_framework, is_macos_brew
 from virtualenv.create.via_global_ref.builtin.cpython.cpython3 import CPython3Posix
 from virtualenv.info import IS_PYPY, IS_WIN, fs_is_case_sensitive
-from virtualenv.py_discovery import PythonInfo
 from virtualenv.run import cli_run, session_via_cli
 from virtualenv.run.plugin.creators import CreatorSelector
 

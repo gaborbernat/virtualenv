@@ -1,30 +1,41 @@
-"""Virtualenv-specific Discover that wraps py_discovery's base class with VirtualEnvOptions."""
+"""Virtualenv-specific Discover base class for plugin-based Python discovery."""
 
 from __future__ import annotations
 
-from abc import abstractmethod
+import os
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
-
-from virtualenv.py_discovery import Discover as _Discover
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
+    from collections.abc import Mapping
+
+    from python_discovery import PythonInfo
 
     from virtualenv.config.cli.parser import VirtualEnvOptions
-    from virtualenv.py_discovery import PythonInfo
 
 
-class Discover(_Discover):
+class Discover(ABC):
     @classmethod
     def add_parser_arguments(cls, parser: ArgumentParser) -> None:
         raise NotImplementedError
 
     def __init__(self, options: VirtualEnvOptions) -> None:
-        super().__init__(env=options.env)
+        self._has_run = False
+        self._interpreter: PythonInfo | None = None
+        self._env: Mapping[str, str] = options.env if options.env is not None else os.environ
 
     @abstractmethod
     def run(self) -> PythonInfo | None:
         raise NotImplementedError
+
+    @property
+    def interpreter(self) -> PythonInfo | None:
+        """:returns: the interpreter as returned by :meth:`run`, cached"""
+        if self._has_run is False:
+            self._interpreter = self.run()
+            self._has_run = True
+        return self._interpreter
 
 
 __all__ = [

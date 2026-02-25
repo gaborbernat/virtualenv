@@ -49,6 +49,7 @@ dependencies = [
   "filelock>=3.24.2,<4; python_version>='3.10'",
   "importlib-metadata>=6.6; python_version<'3.8'",
   "platformdirs>=3.9.1,<5",
+  "python-discovery>=1",
   "typing-extensions>=4.13.2; python_version<'3.11'",
 ]
 urls.Documentation = "https://virtualenv.pypa.io"
@@ -179,26 +180,6 @@ lint.ignore = [
 ]
 lint.per-file-ignores."src/virtualenv/activation/python/activate_this.py" = [
   "F821", # ignore undefined template string placeholders
-]
-lint.per-file-ignores."src/virtualenv/discovery/**/*.py" = [
-  "FBT",     # boolean arguments inherited from py_discovery API
-  "PLC0415", # lazy imports for circular dependencies
-  "SLF001",  # private member access on monkey-patched methods
-]
-lint.per-file-ignores."src/virtualenv/py_discovery/**/*.py" = [
-  "C901",    # complex discovery/matching logic
-  "FBT",     # boolean arguments are part of the public API
-  "PLC0415", # lazy imports for optional/circular dependencies
-  "PLR0904", # PythonInfo has many public methods by design
-  "PLR0911", # multiple return points in matching logic
-  "PLR0912", # many branches in discovery/matching
-  "PLR0913", # many parameters in factory methods
-  "PLR0915", # many statements in PythonInfo.__init__
-  "PLR1702", # nested parsing logic in PythonSpec
-  "PLR2004", # magic values in version parsing (2, 3, 4, 9, 32, 64)
-  "PYI024",  # namedtuple needed for 3.8 compat with __future__ annotations
-  "SLF001",  # private member access within package
-  "TRY301",  # raise in try is intentional pattern
 ]
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001",  # unused function arguments in mock callbacks
