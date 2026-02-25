@@ -7,6 +7,15 @@
 .. towncrier release notes start
 
 ***********************
+ v20.39.1 (2026-02-25)
+***********************
+
+Features - 20.39.1
+==================
+
+- Add support for creating virtual environments with RustPython - by :user:`elmjag`. (:issue:`3010`)
+
+***********************
  v20.39.0 (2026-02-23)
 ***********************
 
