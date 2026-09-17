@@ -1,0 +1,67 @@
+name: verify-activate-bat-fix-battery
+on:
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: install patched virtualenv from this checkout
+        run: python -m pip install .
+
+      - name: build one venv per payload and activate each
+        shell: python
+        run: |
+          import pathlib
+          from virtualenv import cli_run
+
+          payloads = {
+              "quote_amp": 'x" & type nul > pwned_1.marker & "',
+              "bare_amp": 'x & type nul > pwned_2.marker & ',
+              "caret_amp": 'x^& type nul ^> pwned_3.marker ^& ',
+              "pipe": 'x | type nul > pwned_4.marker',
+              "paren": '(type nul > pwned_5.marker)',
+              "redirect_only": 'x > pwned_6.marker',
+              "percent_and_amp": '%CD% & type nul > pwned_7.marker',
+              "newline_inject": 'x\n@type nul > pwned_8.marker\n@rem ',
+              "double_quote_close_open": 'a"&type nul>pwned_9.marker&"b',
+          }
+          for name, payload in payloads.items():
+              cli_run(["--prompt", payload, f"venv_{name}"])
+              print(f"--- {name} rendered line ---")
+              bat = pathlib.Path(f"venv_{name}") / "Scripts" / "activate.bat"
+              for line in bat.read_text(encoding="utf-8").splitlines():
+                  if "VIRTUAL_ENV_PROMPT=" in line:
+                      print(line)
+
+      - name: activate every venv exactly as a victim would
+        shell: cmd
+        run: |
+          for /d %%v in (venv_*) do (
+            echo === activating %%v ===
+            call %%v\Scripts\activate.bat
+            call %%v\Scripts\deactivate.bat
+          )
+
+      - name: verdict
+        shell: pwsh
+        run: |
+          $markers = Get-ChildItem -Filter "pwned_*.marker" -ErrorAction SilentlyContinue
+          if ($markers) {
+            Write-Host "STILL VULNERABLE: markers created: $($markers.Name -join ', ')"
+            exit 1
+          } else {
+            Write-Host "FIX CONFIRMED: no marker created across the full payload battery"
+          }
