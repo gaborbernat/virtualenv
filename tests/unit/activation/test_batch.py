@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 from argparse import Namespace
+from pathlib import Path
 
 import pytest
 
@@ -122,6 +124,23 @@ def test_batch(activation_tester_class, activation_tester, tmp_path, activations
 
         def print_prompt(self) -> str:
             return 'echo "%PROMPT%"'
+
+        def assert_pkg_config_path(self, before, activated, deactivated, raw) -> None:
+            # cmd.exe has no way to represent &|<>()^ literally inside @set "VAR=value" (confirmed on a
+            # real Windows runner - Microsoft's own caret escape is suppressed inside the quotes), so
+            # BatchActivator.quote() neuters them. special_char_name carries several of these, so the
+            # PKG_CONFIG_PATH entry activate.bat actually sets is built from the neutered dest, not the
+            # raw one the base assertion compares against.
+            user_value = os.environ.get("PKG_CONFIG_PATH")
+            neutered_dest = BatchActivator.quote(str(self._creator.dest))
+            assert (before, [self.norm_path(entry) for entry in activated.split(os.pathsep)], deactivated) == (
+                str(user_value),
+                [
+                    self.norm_path(Path(neutered_dest) / "lib" / "pkgconfig"),
+                    *([self.norm_path(user_value)] if user_value else []),
+                ],
+                str(user_value),
+            ), raw
 
     activation_tester(Batch)
 
