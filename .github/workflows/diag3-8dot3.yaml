@@ -1,0 +1,27 @@
+name: diag3-8dot3-check
+on:
+  workflow_dispatch: {}
+permissions: {}
+jobs:
+  diag:
+    runs-on: windows-latest
+    permissions: {}
+    steps:
+      - name: check 8dot3 settings
+        shell: cmd
+        run: |
+          fsutil 8dot3name query C:
+          fsutil 8dot3name query D:
+          fsutil 8dot3name query %TEMP%
+
+      - name: test GetShortPathNameW directly
+        shell: python
+        run: |
+          import os, tempfile
+          from ctypes import create_unicode_buffer, windll
+
+          d = tempfile.mkdtemp(suffix="&&weird(name)")
+          print("created:", d)
+          buf = create_unicode_buffer(260)
+          n = windll.kernel32.GetShortPathNameW(d, buf, len(buf))
+          print("GetShortPathNameW returned:", n, "value:", repr(buf.value))
