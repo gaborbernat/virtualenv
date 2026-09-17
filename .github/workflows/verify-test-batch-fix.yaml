@@ -24,4 +24,4 @@ jobs:
           python -m pip install pytest pytest-mock pytest-xdist pytest-randomly pytest-timeout pytest-env pytest-rerunfailures time-machine distlib
 
       - name: run the full test_batch parametrization matrix
-        run: python -m pytest tests/unit/activation/test_batch.py -vv --no-header -p no:randomly --tb=short
+        run: python -m pytest tests/unit/activation/test_batch.py --int -n auto --dist loadfile -vv --no-header --tb=short
