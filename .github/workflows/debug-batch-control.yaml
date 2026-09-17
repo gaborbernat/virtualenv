@@ -1,4 +1,4 @@
-name: debug-batch-test-regression
+name: debug-batch-control-unpatched
 on:
   workflow_dispatch: {}
 
@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: 087a2ef8
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -23,5 +24,6 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest pytest-mock pytest-xdist pytest-randomly pytest-timeout pytest-env pytest-rerunfailures time-machine distlib
 
-      - name: run the failing test with full output
-        run: python -m pytest "tests/unit/activation/test_batch.py::test_batch[no_prompt-no_tcl-user_env_set-activate_once]" -vv -s --no-header -p no:randomly -p no:cacheprovider --tb=long
+      - name: run the same test against unpatched (pre-fix) code
+        run: python -m pytest "tests/unit/activation/test_batch.py::test_batch[no_prompt-no_tcl-user_env_set-activate_once]" -vv -s --no-header -p no:randomly -p no:cacheprovider --tb=short
+        continue-on-error: true
