@@ -4,6 +4,7 @@ import os
 from typing import TYPE_CHECKING
 
 from virtualenv.activation.via_template import ViaTemplateActivator
+from virtualenv.util.text import collapse_line_boundaries
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -25,7 +26,17 @@ class BatchActivator(ViaTemplateActivator):
 
     @staticmethod
     def quote(string: str) -> str:
-        return string
+        """Make a value safe to sit inside ``@set "VAR=value"``.
+
+        Batch has no escape for a double quote in this context: it always closes the quoted string,
+        and whatever follows on the line runs as live cmd.exe syntax (``&``, ``|``, redirections, ...).
+        A raw line boundary is worse - batch is line-oriented regardless of quote state, so it starts
+        a brand-new statement instead of staying inside the value. Neither can be represented
+        literally here, so replace them with a space. ``%`` still triggers variable expansion inside
+        the quotes, but doubling it to ``%%`` is a real, in-file escape that keeps the literal
+        character.
+        """
+        return collapse_line_boundaries(string.replace("%", "%%").replace('"', " "))
 
     def instantiate_template(self, replacements: dict[str, str], template: str, creator: Creator) -> str:
         # ensure the text has all newlines as \r\n - required by batch

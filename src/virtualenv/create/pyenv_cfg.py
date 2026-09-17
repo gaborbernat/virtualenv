@@ -5,6 +5,8 @@ import os
 from collections import OrderedDict
 from typing import TYPE_CHECKING
 
+from virtualenv.util.text import collapse_line_boundaries
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -48,7 +50,7 @@ class PyEnvCfg:
                 normalized_value = f'"{value}"'
             else:
                 normalized_value = os.path.abspath(value) if value and os.path.exists(value) else value
-            line = f"{key} = {normalized_value}"
+            line = f"{collapse_line_boundaries(key)} = {collapse_line_boundaries(normalized_value)}"
             LOGGER.debug("\t%s", line)
             text += line
             text += "\n"
