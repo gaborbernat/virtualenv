@@ -47,7 +47,11 @@ def _short_path(path: str) -> str | None:
     from ctypes import create_unicode_buffer, windll  # ruff:ignore[import-outside-top-level]
 
     buffer = create_unicode_buffer(260)
-    if windll.kernel32.GetShortPathNameW(path, buffer, len(buffer)) == 0:
+    n = windll.kernel32.GetShortPathNameW(path, buffer, len(buffer))
+    import sys as _s
+
+    print(f"DEBUG _short_path({path!r}) -> n={n} value={buffer.value!r}", file=_s.stderr)  # noqa
+    if n == 0:
         return None
     return buffer.value or None
 
