@@ -8,6 +8,7 @@ from virtualenv.util.text import collapse_line_boundaries
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
     from python_discovery import PythonInfo
 
@@ -15,10 +16,36 @@ if TYPE_CHECKING:
 
 # cmd.exe's own command-line parser looks for these regardless of surrounding quotes: confirmed on a
 # real Windows runner that `@set "VAR=x & cmd"` still runs `cmd` as a second statement even though the
-# whole VAR=value expression is quoted. Microsoft's documented fix is to escape them with the caret
-# (^), but caret escaping is itself suppressed inside a quoted string - the exact context every value
-# here is substituted into - so there is no way to keep them literal.
-_CMD_OPERATORS: Final[tuple[str, ...]] = ("&", "|", "<", ">", "(", ")", "^", '"')
+# whole VAR=value expression is quoted. `(` and `)` are not in this set - confirmed on the same runner
+# that `@set "VAR=C:\Program Files (x86)\..."` round-trips unchanged, since parentheses are only special
+# to cmd.exe as block delimiters in control-flow syntax (if/for), not as bare characters in a value.
+_CMD_OPERATORS: Final[tuple[str, ...]] = ("&", "|", "<", ">", "^", '"')
+
+# Of _CMD_OPERATORS, only `&` can actually occur in a real Windows path: `|`, `<`, `>` and `"` are
+# already illegal in Windows filenames, and a literal `^` is silently dropped by cmd.exe itself even
+# with no help from quote(), confirmed on a real Windows runner - never exploitable, just a value that
+# reads one character short. `&` is different: quote() can neuter it in free text like the prompt, but
+# doing that to a path would silently point activate.bat at a directory that does not exist. There is no
+# way to represent it here and no way to fake the path, so refuse instead.
+_PATH_UNSAFE_CHARS: Final[tuple[str, ...]] = ("&",)
+
+_PATH_REPLACEMENT_NAMES: Final[dict[str, str]] = {
+    "__VIRTUAL_ENV__": "the destination directory",
+    "__TCL_LIBRARY__": "the interpreter's Tcl library path",
+    "__TK_LIBRARY__": "the interpreter's Tk library path",
+}
+
+
+def _check_path_is_representable(key: str, value: str) -> None:
+    found = sorted({char for char in value if char in _PATH_UNSAFE_CHARS})
+    if found:
+        msg = (
+            f"cannot generate a batch activator: {_PATH_REPLACEMENT_NAMES[key]} ({value!r}) contains "
+            f"{''.join(found)!r}, and cmd.exe has no way to keep that literal inside the "
+            f'@set "VAR=value" lines activate.bat relies on. Move it somewhere without &, or drop the '
+            f"batch activator for this environment."
+        )
+        raise ValueError(msg)
 
 
 class BatchActivator(ViaTemplateActivator):
@@ -30,6 +57,12 @@ class BatchActivator(ViaTemplateActivator):
         yield "activate.bat"
         yield "deactivate.bat"
         yield "pydoc.bat"
+
+    def replacements(self, creator: Creator, dest_folder: Path) -> dict[str, str]:
+        values = super().replacements(creator, dest_folder)
+        for key in _PATH_REPLACEMENT_NAMES:
+            _check_path_is_representable(key, values[key])
+        return values
 
     @staticmethod
     def quote(string: str) -> str:
