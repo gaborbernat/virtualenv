@@ -52,23 +52,25 @@ jobs:
         shell: cmd
         run: call wrapper.bat
 
-      - name: Program Files (x86) style tcl path preserved
+      - name: Program Files (x86) style tcl path has no reason to skip
         shell: python
         run: |
-          from virtualenv.activation.batch import BatchActivator, _check_path_is_representable
-          _check_path_is_representable("__TCL_LIBRARY__", r"C:\Program Files (x86)\Python39\tcl")
-          print("accepted, not rejected")
+          from virtualenv.activation.batch import _unsafe_path_reason
+          reason = _unsafe_path_reason("__TCL_LIBRARY__", r"C:\Program Files (x86)\Python39\tcl")
+          assert reason is None, reason
+          print("accepted, not skipped")
 
-      - name: ampersand path is rejected
+      - name: ampersand path skips only the batch activator, venv still created
         shell: python
         run: |
           from virtualenv import cli_run
-          try:
-              cli_run(["C:\\weird&path\\venv"])
-              print("FAIL: should have raised")
-              raise SystemExit(1)
-          except ValueError as e:
-              print("correctly rejected:", e)
+          import pathlib
+
+          session = cli_run(["venv_amp&ersand"])
+          bat = pathlib.Path("venv_amp&ersand") / "Scripts" / "activate.bat"
+          assert not bat.exists(), "batch activator should have been skipped, not written"
+          assert (pathlib.Path("venv_amp&ersand") / "Scripts" / "python.exe").exists(), "venv itself must still exist"
+          print("batch activator skipped, venv otherwise intact")
 
       - name: run the full test_batch parametrization matrix
         run: python -m pytest tests/unit/activation/test_batch.py tests/property/test_batch_quote.py --int -n auto --dist loadfile -vv --no-header --tb=short
