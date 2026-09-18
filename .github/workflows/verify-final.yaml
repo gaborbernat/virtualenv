@@ -1,0 +1,74 @@
+name: verify-final-batch-fix
+on:
+  workflow_dispatch: {}
+permissions: {}
+jobs:
+  verify:
+    runs-on: windows-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with: { python-version: "3.12" }
+      - run: |
+          python -m pip install -e .
+          python -m pip install pytest pytest-mock pytest-xdist pytest-randomly pytest-timeout pytest-env pytest-rerunfailures time-machine distlib hypothesis
+
+      - name: exploit still neutralized + delayed expansion leak closed + parens safe
+        shell: python
+        run: |
+          from virtualenv import cli_run
+          import pathlib
+
+          cli_run(["--prompt", 'x" & type nul > pwned.marker & "', "venv_exploit"])
+          cli_run(["--prompt", "foo!SECRET!bar", "venv_bang"])
+
+          for name in ("venv_exploit", "venv_bang"):
+              bat = pathlib.Path(name) / "Scripts" / "activate.bat"
+              for line in bat.read_text(encoding="utf-8").splitlines():
+                  if "VIRTUAL_ENV_PROMPT=" in line and "for %%d" not in line:
+                      print(name, repr(line))
+
+      - name: run exploit and delayed-expansion activations
+        shell: cmd
+        run: |
+          call venv_exploit\Scripts\activate.bat
+          if exist pwned.marker (echo EXPLOIT_STILL_WORKS & exit /b 1) else (echo exploit neutralized)
+
+      - name: write delayed expansion wrapper and run it
+        shell: python
+        run: |
+          import pathlib
+          pathlib.Path("wrapper.bat").write_text(
+              "@setlocal enabledelayedexpansion\r\n"
+              "@set SECRET=leaked-value\r\n"
+              r'@call venv_bang\Scripts\activate.bat' "\r\n"
+              "@echo PROMPT_VALUE=%VIRTUAL_ENV_PROMPT%\r\n",
+              encoding="ascii",
+          )
+
+      - name: run wrapper, expect no leak
+        shell: cmd
+        run: call wrapper.bat
+
+      - name: Program Files (x86) style tcl path preserved
+        shell: python
+        run: |
+          from virtualenv.activation.batch import BatchActivator, _check_path_is_representable
+          _check_path_is_representable("__TCL_LIBRARY__", r"C:\Program Files (x86)\Python39\tcl")
+          print("accepted, not rejected")
+
+      - name: ampersand path is rejected
+        shell: python
+        run: |
+          from virtualenv import cli_run
+          try:
+              cli_run(["C:\\weird&path\\venv"])
+              print("FAIL: should have raised")
+              raise SystemExit(1)
+          except ValueError as e:
+              print("correctly rejected:", e)
+
+      - name: run the full test_batch parametrization matrix
+        run: python -m pytest tests/unit/activation/test_batch.py tests/property/test_batch_quote.py --int -n auto --dist loadfile -vv --no-header --tb=short
