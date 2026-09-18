@@ -18,7 +18,7 @@ import pytest
 from hypothesis import example, given
 from hypothesis import strategies as st
 
-from virtualenv.activation.batch import BatchActivator, _check_path_is_representable
+from virtualenv.activation.batch import BatchActivator, _unsafe_path_reason
 
 pytestmark = pytest.mark.property
 
@@ -74,15 +74,17 @@ def test_embedding_in_the_set_statement_stays_one_well_formed_line(value: str) -
 
 @given(prefix=st.text(st.characters(blacklist_categories=("Cs",), blacklist_characters="&"), max_size=8))
 @example("C:\\Program Files (x86)\\Python39\\tcl")
-def test_path_without_ampersand_is_accepted(prefix: str) -> None:
-    _check_path_is_representable("__VIRTUAL_ENV__", prefix)  # must not raise
+def test_path_without_ampersand_has_no_reason_to_skip(prefix: str) -> None:
+    assert _unsafe_path_reason("__VIRTUAL_ENV__", prefix) is None
 
 
 @given(
     before=st.text(st.characters(blacklist_categories=("Cs",), blacklist_characters="&"), max_size=4),
     after=st.text(st.characters(blacklist_categories=("Cs",), blacklist_characters="&"), max_size=4),
 )
-def test_path_with_ampersand_is_rejected(before: str, after: str) -> None:
-    """An `&` in a destination path can never be represented, so creation must refuse it outright."""
-    with pytest.raises(ValueError, match="cannot generate a batch activator"):
-        _check_path_is_representable("__VIRTUAL_ENV__", f"{before}&{after}")
+def test_path_with_ampersand_has_a_reason_to_skip(before: str, after: str) -> None:
+    """An `&` in a destination path can never be represented, so generation must skip it, not guess."""
+    reason = _unsafe_path_reason("__VIRTUAL_ENV__", f"{before}&{after}")
+
+    assert reason is not None
+    assert "&" in reason

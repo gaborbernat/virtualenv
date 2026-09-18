@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Final
 
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
     from python_discovery import PythonInfo
 
     from virtualenv.create.creator import Creator
+
+LOGGER = logging.getLogger(__name__)
 
 # cmd.exe's own command-line parser looks for these regardless of surrounding quotes: confirmed on a
 # real Windows runner that `@set "VAR=x & cmd"` still runs `cmd` as a second statement even though the
@@ -40,16 +43,14 @@ _PATH_REPLACEMENT_NAMES: Final[dict[str, str]] = {
 }
 
 
-def _check_path_is_representable(key: str, value: str) -> None:
+def _unsafe_path_reason(key: str, value: str) -> str | None:
     found = sorted({char for char in value if char in _PATH_UNSAFE_CHARS})
-    if found:
-        msg = (
-            f"cannot generate a batch activator: {_PATH_REPLACEMENT_NAMES[key]} ({value!r}) contains "
-            f"{''.join(found)!r}, and cmd.exe has no way to keep that literal inside the "
-            f'@set "VAR=value" lines activate.bat relies on. Move it somewhere without &, or drop the '
-            f"batch activator for this environment."
-        )
-        raise ValueError(msg)
+    if not found:
+        return None
+    return (
+        f"{_PATH_REPLACEMENT_NAMES[key]} ({value!r}) contains {''.join(found)!r}, and cmd.exe has no way "
+        f'to keep that literal inside the @set "VAR=value" lines activate.bat relies on'
+    )
 
 
 class BatchActivator(ViaTemplateActivator):
@@ -62,11 +63,14 @@ class BatchActivator(ViaTemplateActivator):
         yield "deactivate.bat"
         yield "pydoc.bat"
 
-    def replacements(self, creator: Creator, dest_folder: Path) -> dict[str, str]:
-        values = super().replacements(creator, dest_folder)
-        for key in _PATH_REPLACEMENT_NAMES:
-            _check_path_is_representable(key, values[key])
-        return values
+    def generate(self, creator: Creator) -> list[Path]:
+        values = super().replacements(creator, creator.bin_dir)
+        problems = [reason for key in _PATH_REPLACEMENT_NAMES if (reason := _unsafe_path_reason(key, values[key]))]
+        if problems:
+            for problem in problems:
+                LOGGER.warning("skipping batch activation scripts: %s", problem)
+            return []
+        return super().generate(creator)
 
     @staticmethod
     def quote(string: str) -> str:
