@@ -1,10 +1,31 @@
 from __future__ import annotations
 
+import sys
 from argparse import Namespace
 
 import pytest
 
 from virtualenv.activation import BatchActivator
+from virtualenv.info import IS_WIN
+
+
+@pytest.fixture(scope="session")
+def special_char_name():
+    """The shared tests/conftest.py fixture, minus &: cmd.exe cannot represent that one at all."""
+    base = "'\";e-$ èрт🚒♞中片-j"
+    if IS_WIN:
+        base = base.replace('"', "").replace(";", "")
+    encoding = "ascii" if IS_WIN else sys.getfilesystemencoding()
+    result = ""
+    for char in base:
+        try:
+            trip = char.encode(encoding, errors="strict").decode(encoding)
+            if char == trip:
+                result += char
+        except ValueError:  # ruff:ignore[try-except-in-loop]
+            continue
+    assert result
+    return result
 
 
 def test_batch_pydoc_bat_quoting(tmp_path) -> None:
