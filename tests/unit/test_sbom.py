@@ -15,10 +15,16 @@ from typing import TYPE_CHECKING, Any, Final
 import pytest
 from hatchling.builders.wheel import WheelBuilder
 
+from virtualenv.info import IS_GRAALPY
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pytest_mock import MockerFixture
+
+# the SBOM comes from the build backend, whatever interpreter later runs virtualenv; each wheel build here takes about
+# 50 seconds on GraalPy, which runs the suite without xdist, and pushes that job past its timeout
+pytestmark = pytest.mark.skipif(IS_GRAALPY, reason="build-time SBOM tests do not depend on the runtime interpreter")
 
 _DISTRIBUTIONS: Final[str] = json.dumps({
     "3.14": {"==any": {"distlib": "__virtualenv__/distlib-0.4-py3-none-any/distlib-0.4.dist-info"}},
