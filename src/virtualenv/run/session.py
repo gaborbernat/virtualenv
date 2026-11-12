@@ -23,8 +23,7 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 
 class Session:

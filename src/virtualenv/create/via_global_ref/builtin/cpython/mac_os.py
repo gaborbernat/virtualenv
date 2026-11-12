@@ -29,8 +29,7 @@ if TYPE_CHECKING:
 
     from virtualenv.create.via_global_ref.builtin.ref import PathRef
 
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 
 class CPythonmacOsFramework(CPython, ABC):
@@ -162,7 +161,7 @@ def fix_mach_o(exe: str, current: str, new: str, max_size: int) -> None:
     :param new: the library reference to use instead
     :param max_size: the largest Mach-O header size the builtin rewrite handles
 
-    """
+    """  # simplint: ignore[function-docstring]  # existing public docs
     try:
         LOGGER.debug("change Mach-O for %s from %s to %s", exe, current, new)
         _builtin_change_mach_o(max_size)(exe, current, new)

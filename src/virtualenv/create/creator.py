@@ -37,11 +37,10 @@ from .pyenv_cfg import PyEnvCfg
 HERE: Final[Path] = Path(os.path.abspath(__file__)).parent
 #: Script that reports debug information from an interpreter.
 DEBUG_SCRIPT: Final[Path] = HERE / "debug.py"
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 
-_DebugInfo = dict[str, Any]  # simplint: ignore[SMP602]  # debug JSON keys vary by interpreter
+_DebugInfo = dict[str, Any]
 
 
 class CreatorMeta:

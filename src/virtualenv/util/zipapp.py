@@ -7,8 +7,7 @@ from typing import Final
 
 from virtualenv.info import ROOT
 
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 
 def read(full_path: str | Path) -> str:

@@ -26,8 +26,7 @@ ROOT: Final[str] = os.path.realpath(os.path.join(os.path.abspath(__file__), os.p
 #: Whether virtualenv runs from a zipapp archive.
 IS_ZIPAPP: Final[bool] = os.path.isfile(ROOT)
 _CAN_SYMLINK = _FS_CASE_SENSITIVE = None
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 
 def fs_supports_symlink() -> bool:

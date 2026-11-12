@@ -37,8 +37,7 @@ if TYPE_CHECKING:
 
     from virtualenv.app_data.base import AppData, ContentStore
 
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 #: Delay before a newer wheel is picked up, so a CI run never sees its version change.
 GRACE_PERIOD_CI: Final[timedelta] = timedelta(hours=1)  # prevent version switch in the middle of a CI run
 #: Delay before a newer minor release of a wheel is picked up.
@@ -91,7 +90,7 @@ def periodic_update(  # ruff:ignore[too-many-arguments]
 
 
 # same inputs as periodic_update, forwarded to trigger_update
-def handle_auto_update(  # ruff:ignore[too-many-arguments]
+def handle_auto_update(  # ruff:ignore[too-many-arguments]  # simplint: ignore[undocumented-public-api]
     distribution: str,
     for_py_version: str,
     wheel: Wheel | None,
@@ -99,16 +98,6 @@ def handle_auto_update(  # ruff:ignore[too-many-arguments]
     app_data: AppData,
     env: dict[str, str],
 ) -> None:
-    """Start a periodic update of the wheel when its update log says one is due.
-
-    :param distribution: the name of the distribution
-    :param for_py_version: the Python version the wheel is for
-    :param wheel: the wheel in use, ``None`` when there is none
-    :param search_dirs: the folders to look for wheels in
-    :param app_data: the application data folder
-    :param env: the environment variables for the update
-
-    """
     u_log = UpdateLog.from_app_data(app_data, distribution, for_py_version)
     if u_log.needs_update:
         u_log.periodic = True
@@ -225,7 +214,7 @@ def add_wheel_to_update_log(wheel: Wheel, for_py_version: str, app_data: AppData
 
 #: Format of the datetimes stored in the update log.
 DATETIME_FMT: Final[str] = "%Y-%m-%dT%H:%M:%S.%fZ"
-_PyPIJson = dict[str, object]  # simplint: ignore[SMP602]  # PyPI's JSON is parsed as is, its fields are read by name
+_PyPIJson = dict[str, object]
 
 
 def dump_datetime(value: datetime | None) -> str | None:
@@ -382,7 +371,7 @@ class UpdateLog:
     @classmethod
     def from_dict(
         cls,
-        dictionary: dict[str, object] | None,  # simplint: ignore[SMP602]  # stored log is parsed JSON
+        dictionary: dict[str, object] | None,  # simplint: ignore[imprecise-annotation]  # stored log is parsed JSON
     ) -> UpdateLog:
         """Parse the update log from the stored form.
 

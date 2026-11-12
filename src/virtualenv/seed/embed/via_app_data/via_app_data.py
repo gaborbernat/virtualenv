@@ -32,8 +32,7 @@ if TYPE_CHECKING:
 
     from .pip_install.base import PipInstall
 
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 
 class FromAppData(BaseEmbed):

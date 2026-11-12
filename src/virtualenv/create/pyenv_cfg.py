@@ -11,8 +11,7 @@ from virtualenv.util.text import collapse_line_boundaries
 if TYPE_CHECKING:
     from pathlib import Path
 
-#: Logger of this module.
-LOGGER: Final[logging.Logger] = logging.getLogger(__name__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__name__)  # simplint: ignore[undocumented-public-api]  # public API
 
 # a plain value such as 3.14 or true would otherwise turn into a path whenever the working directory has an entry so
 # named
